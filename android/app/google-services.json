@@ -1,0 +1,55 @@
+{
+  "project_info": {
+    "project_number": "517915885966",
+    "project_id": "muzaico-bb279",
+    "storage_bucket": "muzaico-bb279.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:517915885966:android:9fa94dc3d88afae1a0e4df",
+        "android_client_info": {
+          "package_name": "com.uniteddreamsstates.muzaiko"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "517915885966-0atn55stsogop7fuvt7in7041ak3ubuk.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.uniteddreamsstates.muzaiko",
+            "certificate_hash": "71cf23b498e4d859c5d23fbcad00c29b306c73a6"
+          }
+        },
+        {
+          "client_id": "517915885966-8j8j35jlvks1fkao7o3qm0lnsv3lfbjs.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.uniteddreamsstates.muzaiko",
+            "certificate_hash": "188001192a44783d2e792f5e0b8b36c5182a8411"
+          }
+        },
+        {
+          "client_id": "517915885966-q6e89m2rqiaqjoq49uaqn0no6aov537j.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBcF6Y8WmnCarosJmVfvUOTg551Kh-kyqA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "517915885966-q6e89m2rqiaqjoq49uaqn0no6aov537j.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

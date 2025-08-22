@@ -1,0 +1,13 @@
+nome do puzzle
+melhor tempo
+usuario
+
+envolve o nome do puzzle com border estilo capsula
+verifica se o user tem algum record. se tem coloca esse puzzle no topo da lista.
+
+criação da variavel "seu melhor tem"
+crie a variavel "seu melhor tempo". a variavel "seu melhor tempo" guarda o melhor tempo do user no puzzle. quando existir um valor em "seu melhor tempo" adicione ao final do item de lista do ranking respectivo- depois do nome do usuario que detem o record.se o nome de usuario que detem o record coincide com o usuario que está logado então substitui "seu melhor tempo: valor" por "Parabens, você detem o melhor tempo"
+
+na tela #selection remova o texto que está agora na app bar e substitua pelo icone de "ranking" e icone de (menu", tres barras). neste momento a tela rankings é um modal da #home mas eu quero chama-la em outras paginas. acha melhor transforma-la em uma pagina independente?
+
+Muita atenção para nao deixar resíduos do código antigo do modal de ranking, blocos incompletos, chaves ou colchetes fora do lugar, ou duplicação de widgets.

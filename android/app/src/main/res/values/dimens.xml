@@ -1,0 +1,6 @@
+<resources>
+    <!-- Verifique se há algum valor de padding definido aqui -->
+    <dimen name="default_padding">1dp</dimen> <!-- Remova ou ajuste o padding conforme necessário -->
+
+    <!-- ...existing code... -->
+</resources>

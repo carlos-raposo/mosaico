@@ -1,0 +1,15 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <!-- Verifique se há algum padding definido aqui -->
+    <ImageView
+        android:id="@+id/logo"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@mipmap/ic_launcher"
+        android:padding="1dp" /> <!-- Remova ou ajuste o padding conforme necessário -->
+
+    <!-- ...existing code... -->
+
+</RelativeLayout>

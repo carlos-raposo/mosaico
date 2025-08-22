@@ -1,0 +1,101 @@
+name: mosaico
+description: "A new Flutter project."
+# The following line prevents the package from being accidentally published to
+# pub.dev using `flutter pub publish`. This is preferred for private packages.
+publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.5.3
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  google_fonts: ^6.3.0
+  audioplayers: ^6.1.0
+  flutter_localizations:
+    sdk: flutter
+  path: ^1.8.0  
+  shared_preferences: ^2.3.5
+  firebase_core: ^3.10.0
+  firebase_auth: ^5.4.0
+  google_sign_in: ^6.3.0
+  cloud_firestore: ^5.6.1
+  confetti: ^0.8.0
+  flutter_svg: ^2.2.0
+  provider: ^6.1.5
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/audio/bamboo.mp3
+    - assets/audio/bell2.mp3
+    - assets/audio/bamboox2.mp3
+    - assets/images/
+    - assets/images/col_1/puzzle1.png
+    - assets/images/col_1/puzzle1/
+    - assets/images/col_1/puzzle1/4x4/
+    - assets/images/col_1/puzzle1/5x5/
+  
+    - assets/images/col_1/puzzle2.png
+    - assets/images/col_1/puzzle2/
+    - assets/images/col_1/puzzle2/4x4/
+    - assets/images/col_1/puzzle2/5x5/
+
+    - assets/images/col_1/puzzle3.png
+    - assets/images/col_1/puzzle3/
+    - assets/images/col_1/puzzle3/4x4/
+    - assets/images/col_1/puzzle3/5x5/
+
+    - assets/images/col_1/puzzle4.png
+    - assets/images/col_1/puzzle4/
+    - assets/images/col_1/puzzle4/4x4/
+
+    - assets/images/col_1/puzzle5.png
+    - assets/images/col_1/puzzle5/
+    - assets/images/col_1/puzzle5/6x4/
+
+    - assets/images/col_1/puzzle6.png
+    - assets/images/col_1/puzzle6/
+    - assets/images/col_1/puzzle6/5x5/
+
+    - assets/images/col_1/puzzle7.png
+    - assets/images/col_1/puzzle7/
+    - assets/images/col_1/puzzle7/4x4/
+
+    - assets/images/col_1/puzzle8.png
+    - assets/images/col_1/puzzle8/
+    - assets/images/col_1/puzzle8/4x4/
+
+    - assets/images/col_1/puzzle9.png
+    - assets/images/col_1/puzzle9/
+    - assets/images/col_1/puzzle9/5x8/
+
+    - assets/images/col_1/puzzle10.png
+    - assets/images/col_1/puzzle10/
+    - assets/images/col_1/puzzle10/4x4/
+   
+
+  # To add custom fonts to your application
+  # fonts:
+  #   - family: Schyler
+  #     fonts:
+  #       - asset: fonts/Schyler-Regular.ttf
+  #       - asset: fonts/Schyler-Italic.ttf
+  #         style: italic
+  #   - family: Trajan Pro
+  #     fonts:
+  #       - asset: fonts/TrajanPro.ttf
+  #       - asset: fonts/TrajanPro_Bold.ttf
+  #         weight: 700
+  #
+  # For details regarding fonts from package dependencies,
+  # see https://flutter.dev/to/font-from-package
