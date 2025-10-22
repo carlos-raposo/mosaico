@@ -403,56 +403,61 @@ class _GameScreenState extends State<GameScreen> {
                     ),
                   ),
                 ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    IconButton(
-                      iconSize: 46.0,
-                      icon: Icon(
-                        Icons.stop,
-                        color: widget.isDarkMode ? AppColors.darkAppBarIcon : AppColors.lightAppBarIcon,
-                      ),
-                      onPressed: () {
-                        _stopShuffleAnimation();
-                        _stopGame();
-                      },
-                    ),
-                    IconButton(
-                      iconSize: 46.0,
-                      icon: Icon(
-                        _isPlaying ? Icons.pause : Icons.play_arrow,
-                        color: widget.isDarkMode ? AppColors.darkAppBarIcon : AppColors.lightAppBarIcon,
-                      ),
-                      onPressed: () {
-                        _stopShuffleAnimation();
-                        if (_isPlaying) {
-                          _pauseGame();
-                        } else {
-                          if (_elapsedSeconds == 0) {
+                SafeArea(
+                  child: Container(
+                    padding: const EdgeInsets.only(bottom: 20.0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        IconButton(
+                          iconSize: 46.0,
+                          icon: Icon(
+                            Icons.stop,
+                            color: widget.isDarkMode ? AppColors.darkAppBarIcon : AppColors.lightAppBarIcon,
+                          ),
+                          onPressed: () {
+                            _stopShuffleAnimation();
+                            _stopGame();
+                          },
+                        ),
+                        IconButton(
+                          iconSize: 46.0,
+                          icon: Icon(
+                            _isPlaying ? Icons.pause : Icons.play_arrow,
+                            color: widget.isDarkMode ? AppColors.darkAppBarIcon : AppColors.lightAppBarIcon,
+                          ),
+                          onPressed: () {
+                            _stopShuffleAnimation();
+                            if (_isPlaying) {
+                              _pauseGame();
+                            } else {
+                              if (_elapsedSeconds == 0) {
+                                _resetSections();
+                                _shuffleSections();
+                              } else if (_isPuzzleComplete()) {
+                                _resetSections();
+                                _shuffleSections();
+                              } else {
+                                _resumeGame();
+                              }
+                            }
+                          },
+                        ),
+                        IconButton(
+                          iconSize: 46.0,
+                          icon: Icon(
+                            Icons.refresh,
+                            color: widget.isDarkMode ? AppColors.darkAppBarIcon : AppColors.lightAppBarIcon,
+                          ),
+                          onPressed: () {
+                            _stopShuffleAnimation();
                             _resetSections();
                             _shuffleSections();
-                          } else if (_isPuzzleComplete()) {
-                            _resetSections();
-                            _shuffleSections();
-                          } else {
-                            _resumeGame();
-                          }
-                        }
-                      },
+                          },
+                        ),
+                      ],
                     ),
-                    IconButton(
-                      iconSize: 46.0,
-                      icon: Icon(
-                        Icons.refresh,
-                        color: widget.isDarkMode ? AppColors.darkAppBarIcon : AppColors.lightAppBarIcon,
-                      ),
-                      onPressed: () {
-                        _stopShuffleAnimation();
-                        _resetSections();
-                        _shuffleSections();
-                      },
-                    ),
-                  ],
+                  ),
                 ),
               ],
             ),
