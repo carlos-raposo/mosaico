@@ -18,9 +18,14 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  
+  // Inicializa as configurações
+  final settingsController = SettingsController();
+  await settingsController.loadSettings();
+  
   runApp(
-    ChangeNotifierProvider(
-      create: (_) => SettingsController(),
+    ChangeNotifierProvider.value(
+      value: settingsController,
       child: const MyApp(),
     ),
   );
@@ -33,6 +38,23 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final settings = Provider.of<SettingsController>(context);
+    
+    // Mostra tela de loading enquanto as configurações não são carregadas
+    if (!settings.isInitialized) {
+      return MaterialApp(
+        title: 'Mosaico',
+        theme: ThemeData(
+          primaryColor: const Color.fromRGBO(209, 217, 239, 1.0),
+          brightness: Brightness.light,
+        ),
+        home: const Scaffold(
+          body: Center(
+            child: CircularProgressIndicator(),
+          ),
+        ),
+      );
+    }
+    
     return MaterialApp(
       title: 'Mosaico',
       theme: ThemeData(

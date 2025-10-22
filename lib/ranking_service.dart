@@ -1,8 +1,45 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 
 class RankingService {
+  
+  // Sincroniza todos os melhores tempos locais com Firestore
+  Future<void> syncOfflineTimesToFirestore() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+    
+    try {
+      // Carrega tempos locais (SharedPreferences)
+      final prefs = await SharedPreferences.getInstance();
+      final stored = prefs.getString('bestTimes');
+      if (stored == null) return;
+      
+      final localBestTimes = Map<String, dynamic>.from(jsonDecode(stored));
+      if (localBestTimes.isEmpty) return;
+      
+      // Para cada puzzle com tempo local, sincroniza com Firestore
+      for (final entry in localBestTimes.entries) {
+        final puzzleId = entry.key;
+        final localTime = entry.value as int;
+        
+        debugPrint('Syncing offline time for $puzzleId: $localTime seconds');
+        
+        // Atualiza melhor tempo pessoal no Firestore
+        await updateUserBestTime(puzzleId, localTime);
+        
+        // Atualiza ranking global se aplicável
+        await updateRanking(puzzleId, puzzleId, localTime);
+      }
+      
+      debugPrint('Offline times sync completed');
+    } catch (e) {
+      debugPrint('Error syncing offline times: $e');
+    }
+  }
+
   Future<void> updateUserBestTime(String puzzleId, int time) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;

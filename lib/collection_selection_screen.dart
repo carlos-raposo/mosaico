@@ -1,6 +1,7 @@
 
 import 'package:flutter/material.dart';
 import 'style_guide.dart';
+import 'progress_service.dart';
 import 'package:provider/provider.dart';
 import 'settings_controller.dart';
 import 'settings_page.dart';
@@ -8,7 +9,7 @@ import 'settings_page.dart';
 
 class CollectionSelectionScreen extends StatefulWidget {
   final List<CollectionData> collections;
-  final void Function(CollectionData, PuzzleData) onPuzzleSelected;
+  final Future<void> Function(CollectionData, PuzzleData) onPuzzleSelected;
 
   const CollectionSelectionScreen({
     super.key,
@@ -21,7 +22,23 @@ class CollectionSelectionScreen extends StatefulWidget {
 }
 
 class _CollectionSelectionScreenState extends State<CollectionSelectionScreen> {
-  // Não há mais expansão de coleção
+  final ProgressService _progressService = ProgressService();
+  List<int> _unlockedPuzzles = [];
+  
+  @override
+  void initState() {
+    super.initState();
+    _loadUnlockedPuzzles();
+  }
+  
+  Future<void> _loadUnlockedPuzzles() async {
+    final unlocked = await _progressService.getUnlockedPuzzles();
+    if (mounted) {
+      setState(() {
+        _unlockedPuzzles = unlocked;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -78,8 +95,28 @@ class _CollectionSelectionScreenState extends State<CollectionSelectionScreen> {
           itemCount: puzzles.length,
           itemBuilder: (context, puzzleIndex) {
             final puzzle = puzzles[puzzleIndex];
+            final puzzleNumber = puzzleIndex + 1; // Puzzle 1, 2, 3...
+            final isUnlocked = _unlockedPuzzles.contains(puzzleNumber);
+            
             return GestureDetector(
-              onTap: () => widget.onPuzzleSelected(widget.collections.first, puzzle),
+              onTap: () async {
+                if (isUnlocked) {
+                  // Navega para o jogo e aguarda retorno
+                  await widget.onPuzzleSelected(widget.collections.first, puzzle);
+                  // Recarrega puzzles desbloqueados quando volta do jogo
+                  await _loadUnlockedPuzzles();
+                } else {
+                  // Mostra mensagem informando que precisa desbloquear
+                  final previousPuzzle = puzzleNumber - 1;
+                  final message = Localizations.localeOf(context).languageCode == 'pt'
+                      ? 'Complete o Puzzle $previousPuzzle para desbloquear este puzzle'
+                      : 'Complete Puzzle $previousPuzzle to unlock this puzzle';
+                  
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(message)),
+                  );
+                }
+              },
               child: Card(
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide.none),
                 elevation: 0,
@@ -90,11 +127,31 @@ class _CollectionSelectionScreenState extends State<CollectionSelectionScreen> {
                       aspectRatio: 1.0,
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(16),
-                        child: Image.asset(
-                          puzzle.imagePath,
-                          fit: BoxFit.cover,
-                          width: double.infinity,
-                          height: double.infinity,
+                        child: Stack(
+                          children: [
+                            Image.asset(
+                              puzzle.imagePath,
+                              fit: BoxFit.cover,
+                              width: double.infinity,
+                              height: double.infinity,
+                              color: isUnlocked ? null : Colors.black.withOpacity(0.6),
+                              colorBlendMode: isUnlocked ? null : BlendMode.darken,
+                            ),
+                            if (!isUnlocked)
+                              Container(
+                                width: double.infinity,
+                                height: double.infinity,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(16),
+                                  color: Colors.black.withOpacity(0.3),
+                                ),
+                                child: Icon(
+                                  Icons.lock,
+                                  color: Colors.white,
+                                  size: 40,
+                                ),
+                              ),
+                          ],
                         ),
                       ),
                     ),
@@ -109,7 +166,9 @@ class _CollectionSelectionScreenState extends State<CollectionSelectionScreen> {
                             style: TextStyle(
                               fontWeight: FontWeight.w600,
                               fontSize: 16,
-                              color: isDarkMode ? AppColors.darkText : AppColors.lightText,
+                              color: isUnlocked 
+                                  ? (isDarkMode ? AppColors.darkText : AppColors.lightText)
+                                  : Colors.grey,
                             ),
                             textAlign: TextAlign.center,
                             maxLines: 1,

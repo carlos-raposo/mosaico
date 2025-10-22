@@ -16,6 +16,7 @@ A aplicação Mosaico utiliza Firebase Firestore como base de dados para armazen
 | `email` | string | Email do utilizador (único) |
 | `bestTimes` | map | Melhores tempos do utilizador por puzzle |
 | `bestTimes.{puzzleId}` | int | Tempo em segundos para cada puzzle |
+| `unlockedPuzzles` | array | Lista de números dos puzzles desbloqueados [1,2,3...] |
 
 **Exemplo de documento:**
 ```json
@@ -26,7 +27,8 @@ A aplicação Mosaico utiliza Firebase Firestore como base de dados para armazen
     "Puzzle 1": 45,
     "Puzzle 2": 78,
     "Puzzle 3": 120
-  }
+  },
+  "unlockedPuzzles": [1, 2, 3, 4]
 }
 ```
 

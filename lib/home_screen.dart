@@ -23,10 +23,10 @@ class HomeScreen extends StatelessWidget {
   final int totalPoints;
   final Function(Locale) setLanguage;
   final Locale locale;
-  final VoidCallback toggleTheme;
+  final Future<void> Function() toggleTheme;
   final bool isDarkMode;
   final bool soundEnabled;
-  final VoidCallback toggleSound;
+  final Future<void> Function() toggleSound;
 
   const HomeScreen({
     super.key,
@@ -394,7 +394,7 @@ class _FakeCollectionSelectionRoute extends StatelessWidget {
     ];
     return CollectionSelectionScreen(
       collections: collections,
-      onPuzzleSelected: (collection, puzzle) {
+      onPuzzleSelected: (collection, puzzle) async {
         // Remove barra final, se houver, para evitar paths com //
         String puzzlePath = puzzle.pieceFolder;
         if (puzzlePath.endsWith('/')) {
@@ -422,7 +422,7 @@ class _FakeCollectionSelectionRoute extends StatelessWidget {
           // fallback: tentar quadrado
           rows = cols = (puzzle.pieceCount > 0) ? sqrt(puzzle.pieceCount).round() : 4;
         }
-        Navigator.of(context).push(
+        await Navigator.of(context).push(
           MaterialPageRoute(
             builder: (context) => GameScreen(
               title: puzzle.name,

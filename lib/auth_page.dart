@@ -4,6 +4,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_sign_in/google_sign_in.dart'; // Add this import
 import 'style_guide.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'ranking_service.dart';
+import 'progress_service.dart';
 
 class AuthPage extends StatefulWidget {
   @override
@@ -18,6 +20,115 @@ class _AuthPageState extends State<AuthPage> {
   bool _isLogin = true;
   bool _obscurePassword = true;
   final _formKey = GlobalKey<FormState>();
+  
+  // Method to create a fresh GoogleSignIn instance
+  GoogleSignIn _createFreshGoogleSignIn() {
+    return GoogleSignIn(
+      scopes: ['email'],
+      // Force account selection on every sign-in
+      forceCodeForRefreshToken: true,
+    );
+  }
+
+  // Method to aggressively clear all Google Sign-In sessions
+  Future<void> _clearAllGoogleSessions() async {
+    // Try with the default instance
+    try {
+      final GoogleSignIn defaultGoogleSignIn = GoogleSignIn();
+      await defaultGoogleSignIn.signOut();
+      await defaultGoogleSignIn.disconnect();
+    } catch (e) {
+      print('Error clearing default Google session: $e');
+    }
+
+    // Try with a fresh instance
+    try {
+      final GoogleSignIn freshGoogleSignIn = _createFreshGoogleSignIn();
+      await freshGoogleSignIn.signOut();
+      await freshGoogleSignIn.disconnect();
+    } catch (e) {
+      print('Error clearing fresh Google session: $e');
+    }
+  }
+
+  // Check if a Google account already exists in our Firestore database
+  Future<bool> _checkIfGoogleAccountExists(String email) async {
+    try {
+      final QuerySnapshot result = await FirebaseFirestore.instance
+          .collection('users')
+          .where('email', isEqualTo: email)
+          .get();
+      return result.docs.isNotEmpty;
+    } catch (e) {
+      print('Error checking if Google account exists: $e');
+      return false; // If error, assume account doesn't exist
+    }
+  }
+
+  // Show dialog asking user if they want to create/link their Google account
+  Future<bool> _showCreateAccountDialog(String accountName) async {
+    return await showDialog<bool>(
+      context: context,
+      barrierDismissible: false, // User must choose
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(
+            _isPortuguese() ? 'Conta Google Não Vinculada' : 'Google Account Not Linked',
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(
+                Icons.info_outline,
+                color: Colors.blue,
+                size: 48,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                _isPortuguese()
+                    ? 'A conta Google "$accountName" ainda não está registrada no Mosaico.'
+                    : 'The Google account "$accountName" is not yet registered in Mosaico.',
+                style: const TextStyle(fontSize: 16),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                _isPortuguese()
+                    ? 'O que deseja fazer:'
+                    : 'What would you like to do:',
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                _isPortuguese()
+                    ? '• Criar nova conta Mosaico com esta conta Google\n• Cancelar e usar outra conta'
+                    : '• Create new Mosaico account with this Google account\n• Cancel and use another account',
+                style: const TextStyle(fontSize: 14),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: Text(
+                _isPortuguese() ? 'Cancelar' : 'Cancel',
+                style: const TextStyle(fontSize: 16),
+              ),
+            ),
+            ElevatedButton.icon(
+              icon: const Icon(Icons.person_add, size: 20),
+              onPressed: () => Navigator.of(context).pop(true),
+              label: Text(
+                _isPortuguese() ? 'Criar Conta' : 'Create Account',
+                style: const TextStyle(fontSize: 16),
+              ),
+            ),
+          ],
+        );
+      },
+    ) ?? false; // Return false if dialog is dismissed somehow
+  }
 
   void _toggleFormType() {
     setState(() {
@@ -67,7 +178,12 @@ class _AuthPageState extends State<AuthPage> {
         await FirebaseFirestore.instance.collection('users').doc(userCredential.user!.uid).set({
           'username': _usernameController.text,
           'email': _emailController.text,
+          'unlockedPuzzles': [1], // Novos utilizadores começam apenas com Puzzle 1
         });
+
+        // Sincroniza tempos offline após registro
+        final rankingService = RankingService();
+        await rankingService.syncOfflineTimesToFirestore();
 
         Navigator.pushReplacementNamed(context, '/');
       } catch (e) {
@@ -83,6 +199,14 @@ class _AuthPageState extends State<AuthPage> {
         email: _emailController.text,
         password: _passwordController.text,
       );
+
+      // Sincroniza tempos offline
+      final rankingService = RankingService();
+      await rankingService.syncOfflineTimesToFirestore();
+      
+      // TEMPORARIAMENTE REMOVIDO - estava desbloqueando todos os puzzles
+      // final progressService = ProgressService();
+      // await progressService.migrateExistingUser();
 
       Navigator.pushReplacementNamed(context, '/');
     } catch (e) {
@@ -147,11 +271,30 @@ class _AuthPageState extends State<AuthPage> {
   // Add Google Sign In method
   Future<void> _signInWithGoogle() async {
     try {
+      // Aggressively clear all existing Google sessions first
+      await _clearAllGoogleSessions();
+      
+      // Create a fresh GoogleSignIn instance to avoid cached sessions
+      final GoogleSignIn googleSignIn = _createFreshGoogleSignIn();
+      
       // Begin interactive sign in process
-      final GoogleSignInAccount? gUser = await GoogleSignIn().signIn();
+      final GoogleSignInAccount? gUser = await googleSignIn.signIn();
       
       // If the user cancels the sign-in flow, return
       if (gUser == null) return;
+      
+      // Check if this Google account is already registered in our app
+      final bool accountExists = await _checkIfGoogleAccountExists(gUser.email);
+      
+      if (!accountExists) {
+        // Show dialog asking if user wants to create/link account
+        final bool shouldCreateAccount = await _showCreateAccountDialog(gUser.displayName ?? gUser.email);
+        if (!shouldCreateAccount) {
+          // User chose not to create account, sign out from Google and return
+          await googleSignIn.signOut();
+          return;
+        }
+      }
       
       // Obtain auth details from request
       final GoogleSignInAuthentication gAuth = await gUser.authentication;
@@ -166,9 +309,8 @@ class _AuthPageState extends State<AuthPage> {
       final UserCredential userCredential = 
           await FirebaseAuth.instance.signInWithCredential(credential);
       
-      // Check if this is a new user (first time sign in)
-      if (userCredential.additionalUserInfo?.isNewUser ?? false) {
-        // Save user info to Firestore
+      // If this is a new account (first time), save user info to Firestore
+      if (!accountExists) {
         await FirebaseFirestore.instance
             .collection('users')
             .doc(userCredential.user!.uid)
@@ -177,8 +319,17 @@ class _AuthPageState extends State<AuthPage> {
                   userCredential.user!.displayName!.length > 9 ? 9 : userCredential.user!.displayName!.length) 
                   ?? 'User${userCredential.user!.uid.substring(0, 5)}',
               'email': userCredential.user?.email ?? '',
+              'unlockedPuzzles': [1], // Novos utilizadores começam apenas com Puzzle 1
             });
       }
+      
+      // Sincroniza tempos offline
+      final rankingService = RankingService();
+      await rankingService.syncOfflineTimesToFirestore();
+      
+      // TEMPORARIAMENTE REMOVIDO - estava desbloqueando todos os puzzles
+      // final progressService = ProgressService();
+      // await progressService.migrateExistingUser();
       
       // Navigate to Collections page
       Navigator.pushReplacementNamed(context, '/');

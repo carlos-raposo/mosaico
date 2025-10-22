@@ -1,8 +1,10 @@
 
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:provider/provider.dart';
 import 'settings_controller.dart';
+import 'progress_service.dart';
 
 class SettingsPage extends StatefulWidget {
   final bool isDarkMode;
@@ -33,6 +35,9 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
+  // Configure GoogleSignIn instance
+  final GoogleSignIn _googleSignIn = GoogleSignIn();
+  
   Locale get _currentLocale => Localizations.localeOf(context);
   String? _getCurrentUserEmail() {
     try {
@@ -96,15 +101,15 @@ class _SettingsPageState extends State<SettingsPage> {
             ListTile(
               leading: Icon(settings.soundEnabled ? Icons.volume_up : Icons.volume_off, color: iconColor),
               title: Text(settings.soundEnabled ? _soundOnLabel : _soundOffLabel, style: TextStyle(color: textColor)),
-              onTap: () {
-                settings.toggleSound();
+              onTap: () async {
+                await settings.toggleSound();
               },
             ),
             ListTile(
               leading: Icon(Icons.brightness_6, color: iconColor),
               title: Text(_themeLabel, style: TextStyle(color: textColor)),
-              onTap: () {
-                settings.toggleTheme();
+              onTap: () async {
+                await settings.toggleTheme();
               },
             ),
             ListTile(
@@ -114,8 +119,8 @@ class _SettingsPageState extends State<SettingsPage> {
                   Text(_languageLabel, style: TextStyle(color: textColor)),
                   const SizedBox(width: 10),
                   ElevatedButton(
-                    onPressed: () {
-                      settings.setLanguage(const Locale('en', 'US'));
+                    onPressed: () async {
+                      await settings.setLanguage(const Locale('en', 'US'));
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: settings.locale.languageCode == 'en'
@@ -130,8 +135,8 @@ class _SettingsPageState extends State<SettingsPage> {
                   ),
                   const SizedBox(width: 10),
                   ElevatedButton(
-                    onPressed: () {
-                      settings.setLanguage(const Locale('pt', 'BR'));
+                    onPressed: () async {
+                      await settings.setLanguage(const Locale('pt', 'BR'));
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: settings.locale.languageCode == 'pt'
@@ -152,7 +157,33 @@ class _SettingsPageState extends State<SettingsPage> {
               title: Text(isAuthenticated ? _logoutLabel : _loginLabel, style: TextStyle(color: textColor)),
               onTap: () async {
                 if (isAuthenticated) {
+                  // Logout do Firebase Auth
                   await FirebaseAuth.instance.signOut();
+                  
+                  // Limpa cache do sistema de progressão
+                  try {
+                    final progressService = ProgressService();
+                    progressService.clearCache();
+                  } catch (e) {
+                    print('Error clearing progress cache: $e');
+                  }
+                  
+                  // Logout completo do Google Sign-In
+                  try {
+                    // Primeiro faz signOut
+                    await _googleSignIn.signOut();
+                    // Depois tenta disconnect para limpar completamente
+                    await _googleSignIn.disconnect();
+                  } catch (e) {
+                    // Se disconnect falhar, tenta apenas signOut novamente
+                    print('Error with Google disconnect, trying signOut again: $e');
+                    try {
+                      await _googleSignIn.signOut();
+                    } catch (e2) {
+                      print('Error signing out from Google: $e2');
+                    }
+                  }
+                  
                   if (mounted) {
                     Navigator.of(context).pushNamedAndRemoveUntil('/auth', (route) => false);
                   }

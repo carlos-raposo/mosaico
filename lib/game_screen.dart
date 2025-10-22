@@ -7,6 +7,7 @@ import 'package:audioplayers/audioplayers.dart';
 // Removed unused imports
 
 import 'ranking_service.dart';
+import 'progress_service.dart';
 import 'style_guide.dart';
 import 'package:provider/provider.dart';
 import 'settings_controller.dart';
@@ -90,7 +91,10 @@ class _GameScreenState extends State<GameScreen> {
     }
   }
 
-  // Removed unused _saveBestTimes
+  Future<void> _saveBestTimes() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('bestTimes', jsonEncode(_bestTimes));
+  }
 
   void _shuffleSections() {
     setState(() {
@@ -184,12 +188,30 @@ class _GameScreenState extends State<GameScreen> {
       if (soundEnabled) {
         _audioPlayer.play(AssetSource('audio/bell2.mp3'));
       }
+      // Sempre salva o melhor tempo localmente (offline e online)
+      String puzzleId = widget.title;
+      final currentBest = _bestTimes[puzzleId];
+      bool isNewBest = currentBest == null || _elapsedSeconds < currentBest;
+      
+      if (isNewBest) {
+        _bestTimes[puzzleId] = _elapsedSeconds;
+        await _saveBestTimes(); // Salva localmente sempre
+      }
+
+      // Tenta desbloquear próximo puzzle
+      final progressService = ProgressService();
+      final unlockedPuzzle = await progressService.unlockNextPuzzle(puzzleId);
+      
+      bool showUnlockMessage = false;
+      if (unlockedPuzzle != null) {
+        showUnlockMessage = true;
+      }
+
       if (widget.isAuthenticated) {
         // puzzleId e puzzleName são iguais e únicos para cada puzzle
-        String puzzleId = widget.title;
         String puzzleName = widget.title;
         final rankingService = RankingService();
-        // Salva o melhor tempo do usuário logado
+        // Salva o melhor tempo do usuário logado no Firestore
         await rankingService.updateUserBestTime(puzzleId, _elapsedSeconds);
         final isTopTime = await rankingService.updateRanking(puzzleId, puzzleName, _elapsedSeconds);
         if (isTopTime) {
@@ -200,8 +222,29 @@ class _GameScreenState extends State<GameScreen> {
           return;
         }
       }
+      
+      // Mensagem personalizada baseada se é novo recorde pessoal e/ou desbloqueou puzzle
+      String message;
+      if (showUnlockMessage && isNewBest) {
+        message = widget.locale.languageCode == 'pt' 
+            ? 'Novo recorde pessoal! Puzzle $unlockedPuzzle desbloqueado! ${_formatTime(_elapsedSeconds)}'
+            : 'New personal best! Puzzle $unlockedPuzzle unlocked! ${_formatTime(_elapsedSeconds)}';
+      } else if (showUnlockMessage) {
+        message = widget.locale.languageCode == 'pt'
+            ? 'Puzzle $unlockedPuzzle desbloqueado! Completado em ${_formatTime(_elapsedSeconds)}'
+            : 'Puzzle $unlockedPuzzle unlocked! Completed in ${_formatTime(_elapsedSeconds)}';
+      } else if (isNewBest) {
+        message = widget.locale.languageCode == 'pt' 
+            ? 'Novo recorde pessoal! ${_formatTime(_elapsedSeconds)}'
+            : 'New personal best! ${_formatTime(_elapsedSeconds)}';
+      } else {
+        message = widget.locale.languageCode == 'pt'
+            ? 'Puzzle completado em ${_formatTime(_elapsedSeconds)}'
+            : 'Puzzle completed in ${_formatTime(_elapsedSeconds)}';
+      }
+      
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Puzzle completed in ${_formatTime(_elapsedSeconds)}')),
+        SnackBar(content: Text(message)),
       );
     }
   }
