@@ -395,47 +395,69 @@ class _FakeCollectionSelectionRoute extends StatelessWidget {
     return CollectionSelectionScreen(
       collections: collections,
       onPuzzleSelected: (collection, puzzle) async {
-        // Remove barra final, se houver, para evitar paths com //
-        String puzzlePath = puzzle.pieceFolder;
-        if (puzzlePath.endsWith('/')) {
-          puzzlePath = puzzlePath.substring(0, puzzlePath.length - 1);
-        }
-        // Calcular rows e cols a partir de pieceCount
-        int rows = 4;
-        int cols = 4;
-        if (puzzle.pieceCount == 16) {
-          rows = 4;
-          cols = 4;
-        } else if (puzzle.pieceCount == 15) {
-          rows = 5;
-          cols = 3;    
-        } else if (puzzle.pieceCount == 24) {
-          rows = 6;
-          cols = 4;  
-        } else if (puzzle.pieceCount == 25) {
-          rows = 5;
-          cols = 5;
-        } else if (puzzle.pieceCount == 40) {
-          rows = 8;
-          cols = 5;
-        } else {
-          // fallback: tentar quadrado
-          rows = cols = (puzzle.pieceCount > 0) ? sqrt(puzzle.pieceCount).round() : 4;
-        }
-        await Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (context) => GameScreen(
-              title: puzzle.name,
-              puzzlePath: puzzlePath,
-              rows: rows,
-              cols: cols,
-              confettiController: ConfettiController(duration: const Duration(seconds: 6)),
-              locale: Localizations.localeOf(context),
-              isAuthenticated: true, // Ajuste conforme necessário
-              isDarkMode: Theme.of(context).brightness == Brightness.dark,
+        // Função auxiliar para navegar para um puzzle
+        Future<Map<String, dynamic>?> navigateToGame(PuzzleData targetPuzzle) async {
+          String puzzlePath = targetPuzzle.pieceFolder;
+          if (puzzlePath.endsWith('/')) {
+            puzzlePath = puzzlePath.substring(0, puzzlePath.length - 1);
+          }
+          
+          // Calcular rows e cols a partir de pieceCount
+          int rows = 4;
+          int cols = 4;
+          if (targetPuzzle.pieceCount == 16) {
+            rows = 4;
+            cols = 4;
+          } else if (targetPuzzle.pieceCount == 15) {
+            rows = 5;
+            cols = 3;    
+          } else if (targetPuzzle.pieceCount == 24) {
+            rows = 6;
+            cols = 4;  
+          } else if (targetPuzzle.pieceCount == 25) {
+            rows = 5;
+            cols = 5;
+          } else if (targetPuzzle.pieceCount == 40) {
+            rows = 8;
+            cols = 5;
+          } else {
+            // fallback: tentar quadrado
+            rows = cols = (targetPuzzle.pieceCount > 0) ? sqrt(targetPuzzle.pieceCount).round() : 4;
+          }
+          
+          return await Navigator.of(context).push<Map<String, dynamic>>(
+            MaterialPageRoute(
+              builder: (context) => GameScreen(
+                title: targetPuzzle.name,
+                puzzlePath: puzzlePath,
+                rows: rows,
+                cols: cols,
+                confettiController: ConfettiController(duration: const Duration(seconds: 6)),
+                locale: Localizations.localeOf(context),
+                isAuthenticated: true,
+                isDarkMode: Theme.of(context).brightness == Brightness.dark,
+              ),
             ),
-          ),
-        );
+          );
+        }
+        
+        // Navega para o puzzle inicial
+        Map<String, dynamic>? result = await navigateToGame(puzzle);
+        
+        // Processa o resultado
+        while (result != null && result['action'] == 'nextPuzzle') {
+          final nextPuzzleNumber = result['puzzleNumber'] as int?;
+          if (nextPuzzleNumber != null && nextPuzzleNumber <= collection.puzzles.length) {
+            final nextPuzzle = collection.puzzles[nextPuzzleNumber - 1];
+            result = await navigateToGame(nextPuzzle);
+          } else {
+            break;
+          }
+        }
+        
+        // Se saiu com ação 'back' ou 'allPuzzles' ou qualquer mudança de puzzles, 
+        // não há necessidade de ação adicional aqui pois o CollectionSelectionScreen 
+        // já vai recarregar os puzzles automaticamente
       },
     );
   }

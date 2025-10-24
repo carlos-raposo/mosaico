@@ -3,8 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'settings_controller.dart';
 import 'progress_service.dart';
+import 'best_times_service.dart';
 
 class SettingsPage extends StatefulWidget {
   final bool isDarkMode;
@@ -165,7 +167,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     final progressService = ProgressService();
                     progressService.clearCache();
                   } catch (e) {
-                    print('Error clearing progress cache: $e');
+                    debugPrint('Error clearing progress cache: $e');
                   }
                   
                   // Logout completo do Google Sign-In
@@ -176,11 +178,11 @@ class _SettingsPageState extends State<SettingsPage> {
                     await _googleSignIn.disconnect();
                   } catch (e) {
                     // Se disconnect falhar, tenta apenas signOut novamente
-                    print('Error with Google disconnect, trying signOut again: $e');
+                    debugPrint('Error with Google disconnect, trying signOut again: $e');
                     try {
                       await _googleSignIn.signOut();
                     } catch (e2) {
-                      print('Error signing out from Google: $e2');
+                      debugPrint('Error signing out from Google: $e2');
                     }
                   }
                   
@@ -196,6 +198,60 @@ class _SettingsPageState extends State<SettingsPage> {
                 setState(() {});
               },
             ),
+            // Opção para limpar cache
+            ListTile(
+              leading: Icon(Icons.clear_all, color: iconColor),
+              title: Text('Limpar Cache Local', style: TextStyle(color: textColor)),
+              subtitle: Text('Remove dados temporários salvos no dispositivo', 
+                           style: TextStyle(color: textColor.withOpacity(0.7))),
+              onTap: () async {
+                bool? confirmClear = await showDialog<bool>(
+                  context: context,
+                  builder: (BuildContext context) {
+                    final user = FirebaseAuth.instance.currentUser;
+                    final isLoggedIn = user != null;
+                    
+                    return AlertDialog(
+                      title: const Text('Limpar Cache'),
+                      content: Text(
+                        isLoggedIn 
+                        ? 'Isso irá remover os dados temporários salvos localmente APENAS da sua conta, '
+                          'incluindo melhores tempos offline, progresso e configurações. '
+                          'Os dados de outros usuários que usaram este dispositivo não serão afetados. '
+                          'Os dados salvos na nuvem não serão perdidos.\n\n'
+                          'Deseja continuar?'
+                        : 'Isso irá remover todos os dados offline salvos localmente, '
+                          'incluindo melhores tempos, progresso e configurações. '
+                          'Como você não está logado, estes dados não podem ser recuperados.\n\n'
+                          'Deseja continuar?'
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.of(context).pop(false),
+                          child: const Text('Cancelar'),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.of(context).pop(true),
+                          child: const Text('Limpar'),
+                        ),
+                      ],
+                    );
+                  },
+                );
+
+                if (confirmClear == true) {
+                  await _clearAllCache();
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Cache limpa com sucesso!'),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  }
+                }
+              },
+            ),
             if (isAuthenticated && widget.onDeleteAccount != null)
               ListTile(
                 leading: Icon(Icons.delete, color: iconColor),
@@ -206,5 +262,92 @@ class _SettingsPageState extends State<SettingsPage> {
         ),
       ),
     );
+  }
+
+  /// Limpa toda a cache local da aplicação (apenas do usuário atual)
+  Future<void> _clearAllCache() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final user = FirebaseAuth.instance.currentUser;
+      
+      if (user != null) {
+        // USUÁRIO LOGADO: Limpa apenas cache específica do usuário
+        final userId = user.uid;
+        
+        // Limpa cache de melhores tempos do usuário específico
+        try {
+          final bestTimesService = BestTimesService();
+          await bestTimesService.clearSpecificUserCache(userId);
+        } catch (e) {
+          debugPrint('Error clearing user best times cache: $e');
+        }
+        
+        // Limpa cache de progressão do usuário específico
+        try {
+          final progressService = ProgressService();
+          await progressService.clearAllCache(); // Limpa completamente para usuário logado
+        } catch (e) {
+          debugPrint('Error clearing progress cache: $e');
+        }
+        
+        // Limpa chaves específicas do usuário
+        final keys = prefs.getKeys();
+        final userKeys = keys.where((key) => 
+          key.contains(userId) ||
+          key == 'bestTimes_$userId' ||
+          key == 'completedPuzzles_$userId' ||
+          key == 'progress_$userId'
+        ).toList();
+        
+        for (String key in userKeys) {
+          await prefs.remove(key);
+        }
+        
+        debugPrint('User cache cleared successfully - removed ${userKeys.length} keys for user $userId: $userKeys');
+        
+      } else {
+        // USUÁRIO NÃO LOGADO: Limpa apenas dados offline/anônimos
+        
+        // Limpa cache de melhores tempos offline
+        try {
+          final bestTimesService = BestTimesService();
+          await bestTimesService.clearOfflineCache();
+        } catch (e) {
+          debugPrint('Error clearing offline best times cache: $e');
+        }
+        
+        // Limpa cache de progressão offline
+        try {
+          final progressService = ProgressService();
+          await progressService.clearAllCache(); // Remove puzzles desbloqueados offline
+        } catch (e) {
+          debugPrint('Error clearing offline progress cache: $e');
+        }
+        
+        // Limpa outras chaves offline/anônimas
+        final keys = prefs.getKeys();
+        final offlineKeys = keys.where((key) => 
+          key == 'bestTimes' || // Dados offline antigos (compatibilidade)
+          key == 'bestTimes_offline' || // Dados offline atuais
+          key == 'unlockedPuzzles' || // Progresso de puzzles desbloqueados offline
+          key.startsWith('offline_') ||
+          key == 'completedPuzzles' || // Progresso offline (se existir)
+          key == 'progress' || // Progresso geral offline
+          (key.startsWith('completedPuzzles_') && !key.contains('_user')) || // Progresso sem user ID
+          (key.startsWith('progress_') && !key.contains('_user')) || // Progresso sem user ID
+          (key.startsWith('unlockedPuzzles_') && !key.contains('_user')) // Puzzles desbloqueados sem user ID
+        ).toList();
+        
+        for (String key in offlineKeys) {
+          await prefs.remove(key);
+        }
+        
+        debugPrint('Offline cache cleared successfully - removed ${offlineKeys.length} keys: $offlineKeys');
+      }
+      
+    } catch (e) {
+      debugPrint('Error clearing cache: $e');
+      rethrow;
+    }
   }
 }

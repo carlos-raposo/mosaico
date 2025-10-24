@@ -12,11 +12,6 @@ class RankingScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    final titleStyle = TextStyle(
-      color: isDarkMode ? Colors.lightGreen : Colors.red,
-      fontSize: (Theme.of(context).textTheme.titleMedium?.fontSize ?? 20),
-      fontWeight: FontWeight.bold,
-    );
     final isPortuguese = Localizations.localeOf(context).languageCode == 'pt';
     return Scaffold(
       appBar: AppBar(

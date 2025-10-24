@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:confetti/confetti.dart';
 import 'dart:async';
-import 'dart:convert';
 import 'package:audioplayers/audioplayers.dart';
 // Removed unused imports
 
 import 'ranking_service.dart';
 import 'progress_service.dart';
+import 'best_times_service.dart';
 import 'style_guide.dart';
 import 'package:provider/provider.dart';
 import 'settings_controller.dart';
@@ -57,8 +56,11 @@ class _GameScreenState extends State<GameScreen> {
   Timer? _timer;
   Timer? _shuffleTimer;
   int _elapsedSeconds = 0;
-  final Map<String, int> _bestTimes = {};
+  final BestTimesService _bestTimesService = BestTimesService();
   final AudioPlayer _audioPlayer = AudioPlayer();
+  // Novos estados para os botões de puzzle desbloqueado
+  bool _showNextPuzzleButtons = false;
+  int? _unlockedPuzzleNumber;
   // Removido: bool _soundEnabled = true;
   // Removed unused variable _isResumed
 
@@ -81,19 +83,8 @@ class _GameScreenState extends State<GameScreen> {
   }
 
   Future<void> _loadBestTimes() async {
-    final prefs = await SharedPreferences.getInstance();
-    final stored = prefs.getString('bestTimes');
-    if (stored != null) {
-      final decoded = Map<String, dynamic>.from(jsonDecode(stored));
-      decoded.forEach((key, value) {
-        _bestTimes[key] = value as int;
-      });
-    }
-  }
-
-  Future<void> _saveBestTimes() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('bestTimes', jsonEncode(_bestTimes));
+    // Novo serviço carrega automaticamente do cache e sincroniza se online
+    await _bestTimesService.loadBestTimes();
   }
 
   void _shuffleSections() {
@@ -102,6 +93,7 @@ class _GameScreenState extends State<GameScreen> {
       _isPlaying = true;
       _stopShuffleAnimation();
       _startTimer();
+      _hideNextPuzzleButtons();
     });
   }
 
@@ -137,6 +129,7 @@ class _GameScreenState extends State<GameScreen> {
       _isPlaying = false;
       _stopTimer();
       _stopShuffleAnimation();
+      _hideNextPuzzleButtons();
     });
   }
 
@@ -155,6 +148,7 @@ class _GameScreenState extends State<GameScreen> {
       _stopShuffleAnimation();
       _images = List.generate(_rows * _cols, (index) => '$_currentPuzzlePath/${index + 1}.png');
       _elapsedSeconds = 0;
+      _hideNextPuzzleButtons();
     });
     if (widget.onExit != null) widget.onExit!();
   }
@@ -188,15 +182,9 @@ class _GameScreenState extends State<GameScreen> {
       if (soundEnabled) {
         _audioPlayer.play(AssetSource('audio/bell2.mp3'));
       }
-      // Sempre salva o melhor tempo localmente (offline e online)
+      // Novo serviço de bestTimes com sync inteligente
       String puzzleId = widget.title;
-      final currentBest = _bestTimes[puzzleId];
-      bool isNewBest = currentBest == null || _elapsedSeconds < currentBest;
-      
-      if (isNewBest) {
-        _bestTimes[puzzleId] = _elapsedSeconds;
-        await _saveBestTimes(); // Salva localmente sempre
-      }
+      bool isNewBest = await _bestTimesService.saveBestTime(puzzleId, _elapsedSeconds);
 
       // Tenta desbloquear próximo puzzle
       final progressService = ProgressService();
@@ -205,6 +193,10 @@ class _GameScreenState extends State<GameScreen> {
       bool showUnlockMessage = false;
       if (unlockedPuzzle != null) {
         showUnlockMessage = true;
+        setState(() {
+          _showNextPuzzleButtons = true;
+          _unlockedPuzzleNumber = unlockedPuzzle;
+        });
       }
 
       if (widget.isAuthenticated) {
@@ -277,6 +269,13 @@ class _GameScreenState extends State<GameScreen> {
     _shuffleTimer?.cancel();
   }
 
+  void _hideNextPuzzleButtons() {
+    setState(() {
+      _showNextPuzzleButtons = false;
+      _unlockedPuzzleNumber = null;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -294,7 +293,10 @@ class _GameScreenState extends State<GameScreen> {
           ),
           onPressed: () {
             _stopGame();
-            Navigator.pop(context);
+            Navigator.pop(context, {
+              'action': 'back',
+              'puzzlesChanged': true, // Sempre indica que pode ter havido mudanças
+            });
           },
         ),
         title: Padding(
@@ -449,54 +451,137 @@ class _GameScreenState extends State<GameScreen> {
                 SafeArea(
                   child: Container(
                     padding: const EdgeInsets.only(bottom: 20.0),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        IconButton(
-                          iconSize: 46.0,
-                          icon: Icon(
-                            Icons.stop,
-                            color: widget.isDarkMode ? AppColors.darkAppBarIcon : AppColors.lightAppBarIcon,
+                        // Botões de próximo puzzle (aparecem quando desbloqueado)
+                        if (_showNextPuzzleButtons) ...[
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: [
+                                
+                                Expanded(
+                                  child: ElevatedButton.icon(
+                                    onPressed: () {
+                                      // Voltar para a seleção de puzzles com informação de que houve mudança
+                                      Navigator.pop(context, {
+                                        'action': 'allPuzzles',
+                                        'puzzlesChanged': true,
+                                      });
+                                    },
+                                    icon: const Icon(Icons.grid_view),
+                                    label: FittedBox(
+                                      fit: BoxFit.scaleDown,
+                                      child: Text(
+                                        widget.locale.languageCode == 'pt' 
+                                            ? 'Menu' 
+                                            : 'Menu',
+                                        style: const TextStyle(fontSize: 14),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.blue,
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(vertical: 12),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: ElevatedButton(
+                                    onPressed: () {
+                                      // Retorna para a tela de seleção com informação de que deve navegar para o próximo puzzle
+                                      Navigator.pop(context, {
+                                        'action': 'nextPuzzle',
+                                        'puzzleNumber': _unlockedPuzzleNumber,
+                                      });
+                                    },
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.green,
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(vertical: 12),
+                                    ),
+                                    child: FittedBox(
+                                      fit: BoxFit.scaleDown,
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Text(
+                                            widget.locale.languageCode == 'pt' 
+                                                ? 'Próximo' 
+                                                : 'Next',
+                                            style: const TextStyle(fontSize: 14),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          const SizedBox(width: 8),
+                                          const Icon(Icons.skip_next),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                
+                              ],
+                            ),
                           ),
-                          onPressed: () {
-                            _stopShuffleAnimation();
-                            _stopGame();
-                          },
-                        ),
-                        IconButton(
-                          iconSize: 46.0,
-                          icon: Icon(
-                            _isPlaying ? Icons.pause : Icons.play_arrow,
-                            color: widget.isDarkMode ? AppColors.darkAppBarIcon : AppColors.lightAppBarIcon,
-                          ),
-                          onPressed: () {
-                            _stopShuffleAnimation();
-                            if (_isPlaying) {
-                              _pauseGame();
-                            } else {
-                              if (_elapsedSeconds == 0) {
+                          const SizedBox(height: 10),
+                        ],
+                        // Botões de controle do jogo
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: [
+                            IconButton(
+                              iconSize: 46.0,
+                              icon: Icon(
+                                Icons.stop,
+                                color: widget.isDarkMode ? AppColors.darkAppBarIcon : AppColors.lightAppBarIcon,
+                              ),
+                              onPressed: () {
+                                _stopShuffleAnimation();
+                                _stopGame();
+                              },
+                            ),
+                            IconButton(
+                              iconSize: 46.0,
+                              icon: Icon(
+                                _isPlaying ? Icons.pause : Icons.play_arrow,
+                                color: widget.isDarkMode ? AppColors.darkAppBarIcon : AppColors.lightAppBarIcon,
+                              ),
+                              onPressed: () {
+                                _stopShuffleAnimation();
+                                if (_isPlaying) {
+                                  _pauseGame();
+                                } else {
+                                  if (_elapsedSeconds == 0) {
+                                    _resetSections();
+                                    _shuffleSections();
+                                  } else if (_isPuzzleComplete()) {
+                                    _resetSections();
+                                    _shuffleSections();
+                                  } else {
+                                    _resumeGame();
+                                  }
+                                }
+                              },
+                            ),
+                            IconButton(
+                              iconSize: 46.0,
+                              icon: Icon(
+                                Icons.refresh,
+                                color: widget.isDarkMode ? AppColors.darkAppBarIcon : AppColors.lightAppBarIcon,
+                              ),
+                              onPressed: () {
+                                _stopShuffleAnimation();
                                 _resetSections();
                                 _shuffleSections();
-                              } else if (_isPuzzleComplete()) {
-                                _resetSections();
-                                _shuffleSections();
-                              } else {
-                                _resumeGame();
-                              }
-                            }
-                          },
-                        ),
-                        IconButton(
-                          iconSize: 46.0,
-                          icon: Icon(
-                            Icons.refresh,
-                            color: widget.isDarkMode ? AppColors.darkAppBarIcon : AppColors.lightAppBarIcon,
-                          ),
-                          onPressed: () {
-                            _stopShuffleAnimation();
-                            _resetSections();
-                            _shuffleSections();
-                          },
+                              },
+                            ),
+                          ],
                         ),
                       ],
                     ),

@@ -10,7 +10,6 @@ class ProgressService {
   
   // Cache por instância (não static) para evitar compartilhamento entre usuários
   List<int> _cachedUnlockedPuzzles = [];
-  bool _cacheLoaded = false;
   String? _cachedUserId; // Para detectar mudança de usuário
 
   /// Carrega a lista de puzzles desbloqueados (primeiro local, depois remoto se autenticado)
@@ -22,47 +21,89 @@ class ProgressService {
     if (_cachedUserId != currentUserId) {
       debugPrint('User changed from ${_cachedUserId} to ${currentUserId} - clearing cache');
       _cachedUnlockedPuzzles.clear();
-      _cacheLoaded = false;
       _cachedUserId = currentUserId;
     }
     
-    if (_cacheLoaded && _cachedUnlockedPuzzles.isNotEmpty) {
-      return _cachedUnlockedPuzzles;
-    }
-
-    // Tenta carregar do cache local primeiro (mais rápido)
-    final localPuzzles = await _loadUnlockedPuzzlesFromLocal();
-    
     if (currentUser != null) {
-      // USUÁRIO AUTENTICADO: Usa APENAS dados do Firestore (ignora dados locais)
-      final remotePuzzles = await _loadUnlockedPuzzlesFromFirestore(currentUser.uid);
-      
-      if (remotePuzzles.isNotEmpty) {
-        // Tem dados no Firestore - usa eles
-        debugPrint('Authenticated user - using Firestore data: $remotePuzzles');
-        _cachedUnlockedPuzzles = remotePuzzles;
-      } else {
-        // Não tem dados no Firestore - inicializa com puzzle 1
-        debugPrint('Authenticated user - no Firestore data, initializing with Puzzle 1');
-        _cachedUnlockedPuzzles = [1];
-        await _saveUnlockedPuzzlesToFirestore(currentUser.uid, _cachedUnlockedPuzzles);
+      // USUÁRIO AUTENTICADO: Tenta Firestore, fallback para cache se offline
+      try {
+        final remotePuzzles = await _loadUnlockedPuzzlesFromFirestore(currentUser.uid);
+        
+        if (remotePuzzles.isNotEmpty) {
+          // Tem dados no Firestore - usa eles e atualiza cache
+          debugPrint('Authenticated user - using Firestore data: $remotePuzzles');
+          _cachedUnlockedPuzzles = remotePuzzles;
+          return remotePuzzles;
+        } else {
+          // Não tem dados no Firestore - inicializa com puzzle 1
+          debugPrint('Authenticated user - no Firestore data, initializing with Puzzle 1');
+          _cachedUnlockedPuzzles = [1];
+          await _saveUnlockedPuzzlesToFirestore(currentUser.uid, _cachedUnlockedPuzzles);
+          return _cachedUnlockedPuzzles;
+        }
+      } catch (e) {
+        debugPrint('Failed to load from Firestore (offline?): $e');
+        
+        // FALLBACK: Usa cache se disponível, senão inicializa com [1]
+        if (_cachedUnlockedPuzzles.isNotEmpty) {
+          debugPrint('Using cached data while offline: $_cachedUnlockedPuzzles');
+          return _cachedUnlockedPuzzles;
+        } else {
+          debugPrint('No cache available, initializing with Puzzle 1');
+          _cachedUnlockedPuzzles = [1];
+          return _cachedUnlockedPuzzles;
+        }
+      }
+    } else {
+      // USUÁRIO NÃO AUTENTICADO: Usa cache local se disponível
+      if (_cachedUnlockedPuzzles.isNotEmpty) {
+        return _cachedUnlockedPuzzles;
       }
       
-      // NÃO salva/usa dados locais para usuários autenticados
-      // Cada usuário tem seus próprios dados no Firestore
-    } else {
-      // Não autenticado, usa apenas dados locais
-      _cachedUnlockedPuzzles = localPuzzles;
+      // Carrega dados locais
+      final localPuzzles = await _loadUnlockedPuzzlesFromLocal();
+      _cachedUnlockedPuzzles = localPuzzles.isEmpty ? [1] : localPuzzles;
       
-      // Se lista vazia, inicializa com puzzle 1
-      if (_cachedUnlockedPuzzles.isEmpty) {
-        _cachedUnlockedPuzzles = [1];
+      // Se inicializou com [1], salva localmente
+      if (localPuzzles.isEmpty) {
         await _saveUnlockedPuzzlesToLocal(_cachedUnlockedPuzzles);
       }
+      
+      return _cachedUnlockedPuzzles;
+    }
+  }
+
+  /// Força um reload inteligente do cache (funciona online e offline)
+  Future<void> forceReloadCache() async {
+    debugPrint('Forcing cache reload...');
+    final currentUser = FirebaseAuth.instance.currentUser;
+    
+    if (currentUser != null) {
+      try {
+        // Tenta buscar dados atualizados do Firestore
+        final remotePuzzles = await _loadUnlockedPuzzlesFromFirestore(currentUser.uid);
+        if (remotePuzzles.isNotEmpty) {
+          _cachedUnlockedPuzzles = remotePuzzles;
+          debugPrint('Cache reloaded from Firestore: $remotePuzzles');
+          return;
+        }
+      } catch (e) {
+        debugPrint('Failed to reload from Firestore (offline?): $e');
+        // Continua usando cache atual se Firestore falhar
+      }
     }
     
-    _cacheLoaded = true;
-    return _cachedUnlockedPuzzles;
+    // FORÇA reload do SharedPreferences mesmo se cache não estiver vazia
+    debugPrint('Force reloading from local storage...');
+    final localPuzzles = await _loadUnlockedPuzzlesFromLocal();
+    _cachedUnlockedPuzzles = localPuzzles.isEmpty ? [1] : localPuzzles;
+    
+    // Se inicializou com [1], salva localmente
+    if (localPuzzles.isEmpty) {
+      await _saveUnlockedPuzzlesToLocal(_cachedUnlockedPuzzles);
+    }
+    
+    debugPrint('Cache reload completed: $_cachedUnlockedPuzzles');
   }
 
   /// Verifica se um puzzle específico está desbloqueado
@@ -112,8 +153,13 @@ class ProgressService {
         debugPrint('Saved progression locally (offline mode)');
       }
       
-      // Atualiza cache
+      // Atualiza cache imediatamente para refletir a mudança
       _cachedUnlockedPuzzles = updatedPuzzles;
+      
+      // Force clear any old cache immediately
+      if (user != null) {
+        debugPrint('Cache updated after unlock - new puzzles: $updatedPuzzles');
+      }
       
       debugPrint('Puzzle $nextNumber unlocked successfully!');
       return nextNumber;
@@ -137,7 +183,7 @@ class ProgressService {
           .get();
       
       if (userDoc.exists) {
-        final data = userDoc.data() as Map<String, dynamic>?;
+        final data = userDoc.data();
         
         // APENAS faz migração se não tem unlockedPuzzles E tem outros dados importantes
         if (data != null && !data.containsKey('unlockedPuzzles')) {
@@ -158,7 +204,6 @@ class ProgressService {
             await _saveUnlockedPuzzlesToLocal(allPuzzles);
             
             _cachedUnlockedPuzzles = allPuzzles;
-            _cacheLoaded = true;
             
             debugPrint('Legacy migration completed: All puzzles unlocked');
           } else {
@@ -169,7 +214,6 @@ class ProgressService {
             await _saveUnlockedPuzzlesToLocal(initialPuzzles);
             
             _cachedUnlockedPuzzles = initialPuzzles;
-            _cacheLoaded = true;
             
             debugPrint('New account initialization: Only Puzzle 1 unlocked');
           }
@@ -184,12 +228,31 @@ class ProgressService {
     }
   }
 
-  /// Limpa cache (útil para logout)
+  /// Limpa cache (útil para logout) - só memória
   void clearCache() {
     _cachedUnlockedPuzzles.clear();
-    _cacheLoaded = false;
     _cachedUserId = null;
     debugPrint('ProgressService cache cleared');
+  }
+
+  /// Limpa cache completamente incluindo SharedPreferences
+  Future<void> clearAllCache() async {
+    // Limpa cache de memória COMPLETAMENTE
+    _cachedUnlockedPuzzles.clear();
+    _cachedUserId = null;
+    
+    // Limpa dados locais
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_unlockedPuzzlesKey);
+      debugPrint('ProgressService all cache cleared (including SharedPreferences)');
+      
+      // FORÇA um reload imediato para garantir estado consistente
+      await forceReloadCache();
+      
+    } catch (e) {
+      debugPrint('Error clearing ProgressService SharedPreferences: $e');
+    }
   }
 
   // --- MÉTODOS PRIVADOS ---
@@ -229,7 +292,7 @@ class ProgressService {
           .get();
       
       if (userDoc.exists) {
-        final data = userDoc.data() as Map<String, dynamic>?;
+        final data = userDoc.data();
         if (data != null && data.containsKey('unlockedPuzzles')) {
           final List<dynamic> puzzles = data['unlockedPuzzles'];
           return puzzles.cast<int>();
@@ -262,19 +325,5 @@ class ProgressService {
     return match != null ? int.tryParse(match.group(1)!) : null;
   }
 
-  /// Faz merge de duas listas, mantendo a que tem mais puzzles desbloqueados
-  List<int> _mergePuzzleLists(List<int> list1, List<int> list2) {
-    final merged = <int>{...list1, ...list2}.toList();
-    merged.sort();
-    return merged;
-  }
 
-  /// Verifica se duas listas são iguais
-  bool _listsAreEqual(List<int> list1, List<int> list2) {
-    if (list1.length != list2.length) return false;
-    for (int i = 0; i < list1.length; i++) {
-      if (list1[i] != list2[i]) return false;
-    }
-    return true;
-  }
 }

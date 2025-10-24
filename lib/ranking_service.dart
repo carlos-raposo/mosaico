@@ -6,19 +6,101 @@ import 'dart:convert';
 
 class RankingService {
   
-  // Sincroniza todos os melhores tempos locais com Firestore
+  // FUNÇÃO CORRIGIDA: Sincroniza tempos offline legitimamente do usuário atual
   Future<void> syncOfflineTimesToFirestore() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
     
     try {
-      // Carrega tempos locais (SharedPreferences)
       final prefs = await SharedPreferences.getInstance();
-      final stored = prefs.getString('bestTimes');
-      if (stored == null) return;
+      
+      // 1. PRIMEIRO: Preserva tempos offline legítimos (se existem)
+      final offlineData = prefs.getString('bestTimes');
+      Map<String, dynamic>? legitimateOfflineTimes;
+      
+      if (offlineData != null) {
+        try {
+          legitimateOfflineTimes = Map<String, dynamic>.from(jsonDecode(offlineData));
+          debugPrint('Found offline times to preserve: ${legitimateOfflineTimes.keys.toList()}');
+        } catch (e) {
+          debugPrint('Error parsing offline times: $e');
+        }
+      }
+      
+      // 2. SEGUNDO: Move tempos offline para chave específica do usuário
+      if (legitimateOfflineTimes != null && legitimateOfflineTimes.isNotEmpty) {
+        final userSpecificKey = 'bestTimes_${user.uid}';
+        
+        // Carrega tempos já existentes do usuário (se houver)
+        final existingUserData = prefs.getString(userSpecificKey);
+        Map<String, dynamic> userTimes = {};
+        
+        if (existingUserData != null) {
+          try {
+            userTimes = Map<String, dynamic>.from(jsonDecode(existingUserData));
+          } catch (e) {
+            debugPrint('Error parsing existing user times: $e');
+          }
+        }
+        
+        // Merge inteligente: Mantém o melhor tempo para cada puzzle
+        bool hasUpdates = false;
+        for (final entry in legitimateOfflineTimes.entries) {
+          final puzzleId = entry.key;
+          final offlineTime = entry.value as int;
+          
+          final existingTime = userTimes[puzzleId] as int?;
+          if (existingTime == null || offlineTime < existingTime) {
+            userTimes[puzzleId] = offlineTime;
+            hasUpdates = true;
+            debugPrint('Preserving offline time for $puzzleId: $offlineTime seconds');
+          }
+        }
+        
+        // Salva tempos do usuário (incluindo offline preservados)
+        if (hasUpdates) {
+          await prefs.setString(userSpecificKey, jsonEncode(userTimes));
+          
+          // Sincroniza com Firestore
+          for (final entry in legitimateOfflineTimes.entries) {
+            final puzzleId = entry.key;
+            final time = entry.value as int;
+            
+            await updateUserBestTime(puzzleId, time);
+            // Também atualiza ranking global se aplicável
+            await updateRanking(puzzleId, puzzleId, time);
+          }
+          
+          debugPrint('Successfully synced ${legitimateOfflineTimes.length} offline times for user: ${user.uid}');
+        }
+      }
+      
+      // 3. TERCEIRO: Remove dados compartilhados SOMENTE após preservar
+      if (offlineData != null) {
+        await prefs.remove('bestTimes');
+        debugPrint('Cleaned up shared bestTimes after preserving legitimate offline data');
+      }
+      
+    } catch (e) {
+      debugPrint('Error during offline sync: $e');
+    }
+    
+    /* CÓDIGO ORIGINAL COMENTADO PARA REFERÊNCIA
+    try {
+      // Carrega tempos locais ESPECÍFICOS DO USUÁRIO
+      final prefs = await SharedPreferences.getInstance();
+      final userSpecificKey = 'bestTimes_${user.uid}';
+      final stored = prefs.getString(userSpecificKey);
+      
+      if (stored == null) {
+        debugPrint('No offline times found for user: ${user.uid}');
+        return;
+      }
       
       final localBestTimes = Map<String, dynamic>.from(jsonDecode(stored));
       if (localBestTimes.isEmpty) return;
+      
+      debugPrint('Syncing ${localBestTimes.length} offline times for user: ${user.uid}');
       
       // Para cada puzzle com tempo local, sincroniza com Firestore
       for (final entry in localBestTimes.entries) {
@@ -34,10 +116,14 @@ class RankingService {
         await updateRanking(puzzleId, puzzleId, localTime);
       }
       
-      debugPrint('Offline times sync completed');
+      // LIMPA os tempos offline após sincronizar para evitar re-sincronização
+      await prefs.remove(userSpecificKey);
+      
+      debugPrint('Offline times sync completed and cleared for user: ${user.uid}');
     } catch (e) {
       debugPrint('Error syncing offline times: $e');
     }
+    */
   }
 
   Future<void> updateUserBestTime(String puzzleId, int time) async {

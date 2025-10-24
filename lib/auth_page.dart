@@ -3,9 +3,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_sign_in/google_sign_in.dart'; // Add this import
 import 'style_guide.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'ranking_service.dart';
-import 'progress_service.dart';
+import 'best_times_service.dart';
 
 class AuthPage extends StatefulWidget {
   @override
@@ -38,7 +37,6 @@ class _AuthPageState extends State<AuthPage> {
       await defaultGoogleSignIn.signOut();
       await defaultGoogleSignIn.disconnect();
     } catch (e) {
-      print('Error clearing default Google session: $e');
     }
 
     // Try with a fresh instance
@@ -47,7 +45,6 @@ class _AuthPageState extends State<AuthPage> {
       await freshGoogleSignIn.signOut();
       await freshGoogleSignIn.disconnect();
     } catch (e) {
-      print('Error clearing fresh Google session: $e');
     }
   }
 
@@ -60,74 +57,74 @@ class _AuthPageState extends State<AuthPage> {
           .get();
       return result.docs.isNotEmpty;
     } catch (e) {
-      print('Error checking if Google account exists: $e');
       return false; // If error, assume account doesn't exist
     }
   }
 
-  // Show dialog asking user if they want to create/link their Google account
-  Future<bool> _showCreateAccountDialog(String accountName) async {
-    return await showDialog<bool>(
+  // Show dialog to collect username for Google account registration
+  Future<String?> _showUsernameDialog(String accountName) async {
+    final TextEditingController usernameController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+    
+    return await showDialog<String>(
       context: context,
       barrierDismissible: false, // User must choose
       builder: (BuildContext context) {
         return AlertDialog(
+          contentPadding: const EdgeInsets.all(16),
           title: Text(
-            _isPortuguese() ? 'Conta Google Não Vinculada' : 'Google Account Not Linked',
-            style: const TextStyle(fontWeight: FontWeight.bold),
+            _isPortuguese() ? 'Nome de Usuário' : 'Username',
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
           ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(
-                Icons.info_outline,
-                color: Colors.blue,
-                size: 48,
+          content: SizedBox(
+            width: 280,
+            child: Form(
+              key: formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextFormField(
+                    controller: usernameController,
+                    decoration: InputDecoration(
+                      labelText: _isPortuguese() ? 'Nome de Usuário' : 'Username',
+                      hintText: _isPortuguese() ? '5-9 caracteres' : '5-9 characters',
+                      border: const OutlineInputBorder(),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      isDense: true,
+                    ),
+                    maxLength: 9,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return _isPortuguese() ? 'Obrigatório' : 'Required';
+                      } else if (value.length < 5 || value.length > 9) {
+                        return _isPortuguese()
+                            ? '5-9 caracteres'
+                            : '5-9 characters';
+                      }
+                      return null;
+                    },
+                  ),
+                ],
               ),
-              const SizedBox(height: 16),
-              Text(
-                _isPortuguese()
-                    ? 'A conta Google "$accountName" ainda não está registrada no Mosaico.'
-                    : 'The Google account "$accountName" is not yet registered in Mosaico.',
-                style: const TextStyle(fontSize: 16),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                _isPortuguese()
-                    ? 'O que deseja fazer:'
-                    : 'What would you like to do:',
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                _isPortuguese()
-                    ? '• Criar nova conta Mosaico com esta conta Google\n• Cancelar e usar outra conta'
-                    : '• Create new Mosaico account with this Google account\n• Cancel and use another account',
-                style: const TextStyle(fontSize: 14),
-              ),
-            ],
+            ),
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: Text(
-                _isPortuguese() ? 'Cancelar' : 'Cancel',
-                style: const TextStyle(fontSize: 16),
-              ),
+              onPressed: () => Navigator.of(context).pop(null),
+              child: Text(_isPortuguese() ? 'Cancelar' : 'Cancel'),
             ),
-            ElevatedButton.icon(
-              icon: const Icon(Icons.person_add, size: 20),
-              onPressed: () => Navigator.of(context).pop(true),
-              label: Text(
-                _isPortuguese() ? 'Criar Conta' : 'Create Account',
-                style: const TextStyle(fontSize: 16),
-              ),
+            ElevatedButton(
+              onPressed: () {
+                if (formKey.currentState!.validate()) {
+                  Navigator.of(context).pop(usernameController.text);
+                }
+              },
+              child: Text(_isPortuguese() ? 'OK' : 'OK'),
             ),
           ],
         );
       },
-    ) ?? false; // Return false if dialog is dismissed somehow
+    );
   }
 
   void _toggleFormType() {
@@ -181,9 +178,8 @@ class _AuthPageState extends State<AuthPage> {
           'unlockedPuzzles': [1], // Novos utilizadores começam apenas com Puzzle 1
         });
 
-        // Sincroniza tempos offline após registro
-        final rankingService = RankingService();
-        await rankingService.syncOfflineTimesToFirestore();
+        // REMOVIDO: Não sincronizar tempos para novos usuários
+        // Novos usuários começam limpos, sem tempos offline de outros usuários
 
         Navigator.pushReplacementNamed(context, '/');
       } catch (e) {
@@ -200,9 +196,9 @@ class _AuthPageState extends State<AuthPage> {
         password: _passwordController.text,
       );
 
-      // Sincroniza tempos offline
-      final rankingService = RankingService();
-      await rankingService.syncOfflineTimesToFirestore();
+      // Migra dados offline para usuário autenticado
+      final bestTimesService = BestTimesService();
+      await bestTimesService.migrateOfflineData();
       
       // TEMPORARIAMENTE REMOVIDO - estava desbloqueando todos os puzzles
       // final progressService = ProgressService();
@@ -286,53 +282,51 @@ class _AuthPageState extends State<AuthPage> {
       // Check if this Google account is already registered in our app
       final bool accountExists = await _checkIfGoogleAccountExists(gUser.email);
       
-      if (!accountExists) {
-        // Show dialog asking if user wants to create/link account
-        final bool shouldCreateAccount = await _showCreateAccountDialog(gUser.displayName ?? gUser.email);
-        if (!shouldCreateAccount) {
-          // User chose not to create account, sign out from Google and return
+      if (_isLogin) {
+        // LOGIN FLOW: User wants to log in with existing account
+        if (accountExists) {
+          // Account exists - proceed with login directly
+          await _completeGoogleSignIn(googleSignIn, gUser, null);
+        } else {
+          // Account doesn't exist - show error message and offer to create account
           await googleSignIn.signOut();
+          _showAccountNotFoundDialog(gUser.email);
           return;
         }
+      } else {
+        // SIGNUP FLOW: User wants to create new account
+        if (accountExists) {
+          // Account already exists - show error message
+          await googleSignIn.signOut();
+          _showAccountAlreadyExistsDialog(gUser.email);
+          return;
+        } else {
+          // Account doesn't exist - collect username and create account
+          final String? username = await _showUsernameDialog(gUser.displayName ?? gUser.email);
+          if (username == null) {
+            // User cancelled username input, sign out from Google and return
+            await googleSignIn.signOut();
+            return;
+          }
+          
+          // Check if username is already taken
+          final QuerySnapshot usernameResult = await FirebaseFirestore.instance
+              .collection('users')
+              .where('username', isEqualTo: username)
+              .get();
+          
+          if (usernameResult.docs.isNotEmpty) {
+            _showErrorDialog(_isPortuguese() 
+                ? 'Nome de usuário já em uso. Tente novamente com outro nome.'
+                : 'Username already in use. Please try again with another name.');
+            await googleSignIn.signOut();
+            return;
+          }
+          
+          // Complete signup with username
+          await _completeGoogleSignIn(googleSignIn, gUser, username);
+        }
       }
-      
-      // Obtain auth details from request
-      final GoogleSignInAuthentication gAuth = await gUser.authentication;
-      
-      // Create a new credential for the user
-      final credential = GoogleAuthProvider.credential(
-        accessToken: gAuth.accessToken,
-        idToken: gAuth.idToken,
-      );
-      
-      // Sign in with Firebase
-      final UserCredential userCredential = 
-          await FirebaseAuth.instance.signInWithCredential(credential);
-      
-      // If this is a new account (first time), save user info to Firestore
-      if (!accountExists) {
-        await FirebaseFirestore.instance
-            .collection('users')
-            .doc(userCredential.user!.uid)
-            .set({
-              'username': userCredential.user?.displayName?.substring(0, 
-                  userCredential.user!.displayName!.length > 9 ? 9 : userCredential.user!.displayName!.length) 
-                  ?? 'User${userCredential.user!.uid.substring(0, 5)}',
-              'email': userCredential.user?.email ?? '',
-              'unlockedPuzzles': [1], // Novos utilizadores começam apenas com Puzzle 1
-            });
-      }
-      
-      // Sincroniza tempos offline
-      final rankingService = RankingService();
-      await rankingService.syncOfflineTimesToFirestore();
-      
-      // TEMPORARIAMENTE REMOVIDO - estava desbloqueando todos os puzzles
-      // final progressService = ProgressService();
-      // await progressService.migrateExistingUser();
-      
-      // Navigate to Collections page
-      Navigator.pushReplacementNamed(context, '/');
     } catch (e) {
       print('Error signing in with Google: $e');
       String errorMessage = _isPortuguese() 
@@ -352,6 +346,169 @@ class _AuthPageState extends State<AuthPage> {
       
       _showErrorDialog(errorMessage);
     }
+  }
+
+  // Helper method to complete Google sign-in process
+  Future<void> _completeGoogleSignIn(GoogleSignIn googleSignIn, GoogleSignInAccount gUser, String? username) async {
+    // Obtain auth details from request
+    final GoogleSignInAuthentication gAuth = await gUser.authentication;
+    
+    // Create a new credential for the user
+    final credential = GoogleAuthProvider.credential(
+      accessToken: gAuth.accessToken,
+      idToken: gAuth.idToken,
+    );
+    
+    // Sign in with Firebase
+    final UserCredential userCredential = 
+        await FirebaseAuth.instance.signInWithCredential(credential);
+    
+    // If this is a new account (signup), save user info to Firestore
+    if (username != null) {
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userCredential.user!.uid)
+          .set({
+            'username': username,
+            'email': userCredential.user?.email ?? '',
+            'unlockedPuzzles': [1], // Novos utilizadores começam apenas com Puzzle 1
+          });
+    }
+    
+    // Limpa dados compartilhados problemáticos (não sincroniza mais automaticamente)
+    final rankingService = RankingService();
+    await rankingService.syncOfflineTimesToFirestore();
+    
+    // Navigate to Collections page
+    Navigator.pushReplacementNamed(context, '/');
+  }
+
+  // Show dialog when account doesn't exist during login
+  void _showAccountNotFoundDialog(String email) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(
+            _isPortuguese() ? 'Conta Não Encontrada' : 'Account Not Found',
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(
+                  Icons.error_outline,
+                  color: Colors.orange,
+                  size: 40,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  _isPortuguese()
+                      ? 'A conta Google não está vinculada ao Mosaico.'
+                      : 'The Google account is not linked to Mosaico.',
+                  style: const TextStyle(fontSize: 14),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  _isPortuguese()
+                      ? 'Deseja criar uma nova conta?'
+                      : 'Do you want to create a new account?',
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(
+                _isPortuguese() ? 'Cancelar' : 'Cancel',
+                style: const TextStyle(fontSize: 14),
+              ),
+            ),
+            ElevatedButton.icon(
+              icon: const Icon(Icons.person_add, size: 18),
+              onPressed: () {
+                Navigator.of(context).pop();
+                setState(() {
+                  _isLogin = false; // Switch to signup mode
+                });
+              },
+              label: Text(
+                _isPortuguese() ? 'Criar Conta' : 'Create Account',
+                style: const TextStyle(fontSize: 14),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Show dialog when account already exists during signup
+  void _showAccountAlreadyExistsDialog(String email) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(
+            _isPortuguese() ? 'Conta Já Existe' : 'Account Already Exists',
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(
+                  Icons.account_circle,
+                  color: Colors.blue,
+                  size: 40,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  _isPortuguese()
+                      ? 'A conta Google já está registrada no Mosaico.'
+                      : 'The Google account is already registered in Mosaico.',
+                  style: const TextStyle(fontSize: 14),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  _isPortuguese()
+                      ? 'Deseja fazer login?'
+                      : 'Do you want to log in?',
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(
+                _isPortuguese() ? 'Cancelar' : 'Cancel',
+                style: const TextStyle(fontSize: 14),
+              ),
+            ),
+            ElevatedButton.icon(
+              icon: const Icon(Icons.login, size: 18),
+              onPressed: () {
+                Navigator.of(context).pop();
+                setState(() {
+                  _isLogin = true; // Switch to login mode
+                });
+              },
+              label: Text(
+                _isPortuguese() ? 'Fazer Login' : 'Log In',
+                style: const TextStyle(fontSize: 14),
+              ),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override

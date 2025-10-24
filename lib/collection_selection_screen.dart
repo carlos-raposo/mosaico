@@ -21,18 +21,42 @@ class CollectionSelectionScreen extends StatefulWidget {
   State<CollectionSelectionScreen> createState() => _CollectionSelectionScreenState();
 }
 
-class _CollectionSelectionScreenState extends State<CollectionSelectionScreen> {
+class _CollectionSelectionScreenState extends State<CollectionSelectionScreen> with WidgetsBindingObserver {
   final ProgressService _progressService = ProgressService();
   List<int> _unlockedPuzzles = [];
   
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _loadUnlockedPuzzles();
+  }
+  
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+  
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      // Recarrega quando a app volta ao primeiro plano
+      _loadUnlockedPuzzles();
+    }
+  }
+
+  /// Método para ser chamado quando voltar de outras telas
+  void refreshPuzzles() {
     _loadUnlockedPuzzles();
   }
   
   Future<void> _loadUnlockedPuzzles() async {
+    // FORÇA reload completo do cache para garantir dados atualizados
+    await _progressService.forceReloadCache();
     final unlocked = await _progressService.getUnlockedPuzzles();
+    print('Puzzles desbloqueados carregados: $unlocked'); // Debug
+    
     if (mounted) {
       setState(() {
         _unlockedPuzzles = unlocked;
@@ -77,7 +101,11 @@ class _CollectionSelectionScreenState extends State<CollectionSelectionScreen> {
                     isAuthenticated: true, // ajuste conforme necessário
                   ),
                 ),
-              );
+              ).then((_) {
+                // FORÇA reload quando volta das configurações
+                print('Voltou das configurações - forçando reload dos puzzles');
+                _loadUnlockedPuzzles();
+              });
             },
           ),
         ],
@@ -103,7 +131,8 @@ class _CollectionSelectionScreenState extends State<CollectionSelectionScreen> {
                 if (isUnlocked) {
                   // Navega para o jogo e aguarda retorno
                   await widget.onPuzzleSelected(widget.collections.first, puzzle);
-                  // Recarrega puzzles desbloqueados quando volta do jogo
+                  // SEMPRE recarrega puzzles desbloqueados quando volta do jogo, 
+                  // independentemente da ação tomada
                   await _loadUnlockedPuzzles();
                 } else {
                   // Mostra mensagem informando que precisa desbloquear
