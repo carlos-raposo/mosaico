@@ -43,17 +43,14 @@ flutter:
     - assets/images/col_1/puzzle1.png
     - assets/images/col_1/puzzle1/
     - assets/images/col_1/puzzle1/4x4/
-    - assets/images/col_1/puzzle1/5x5/
   
     - assets/images/col_1/puzzle2.png
     - assets/images/col_1/puzzle2/
     - assets/images/col_1/puzzle2/4x4/
-    - assets/images/col_1/puzzle2/5x5/
 
     - assets/images/col_1/puzzle3.png
     - assets/images/col_1/puzzle3/
     - assets/images/col_1/puzzle3/4x4/
-    - assets/images/col_1/puzzle3/5x5/
 
     - assets/images/col_1/puzzle4.png
     - assets/images/col_1/puzzle4/
@@ -61,11 +58,11 @@ flutter:
 
     - assets/images/col_1/puzzle5.png
     - assets/images/col_1/puzzle5/
-    - assets/images/col_1/puzzle5/6x4/
+    - assets/images/col_1/puzzle5/4x4/
 
     - assets/images/col_1/puzzle6.png
     - assets/images/col_1/puzzle6/
-    - assets/images/col_1/puzzle6/5x5/
+    - assets/images/col_1/puzzle6/4x4/
 
     - assets/images/col_1/puzzle7.png
     - assets/images/col_1/puzzle7/
@@ -77,7 +74,7 @@ flutter:
 
     - assets/images/col_1/puzzle9.png
     - assets/images/col_1/puzzle9/
-    - assets/images/col_1/puzzle9/5x8/
+    - assets/images/col_1/puzzle9/4x4/
 
     - assets/images/col_1/puzzle10.png
     - assets/images/col_1/puzzle10/
