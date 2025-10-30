@@ -7,10 +7,19 @@ import 'settings_controller.dart';
 import 'settings_page.dart';
 
 class RankingScreen extends StatelessWidget {
-  const RankingScreen({Key? key}) : super(key: key);
+  const RankingScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    String formatTime(int seconds) {
+      if (seconds < 60) return '$seconds seg';
+      final min = seconds ~/ 60;
+      final seg = seconds % 60;
+      if (seg == 0) {
+        return '$min min';
+      }
+      return '$min min $seg seg';
+    }
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final isPortuguese = Localizations.localeOf(context).languageCode == 'pt';
     return Scaffold(
@@ -88,8 +97,23 @@ class RankingScreen extends StatelessWidget {
                 title: Text(isPortuguese ? 'Ainda não há rankings globais.' : 'No global rankings yet.'),
               );
             }
+            // Sort rankings numerically by puzzle number (if puzzleName contains a number)
+            List<QueryDocumentSnapshot> sortedRankings = List.from(rankings);
+            int extractPuzzleNumber(String puzzleName) {
+              final regex = RegExp(r'(\d+)');
+              final match = regex.firstMatch(puzzleName);
+              if (match != null) {
+                return int.tryParse(match.group(1) ?? '') ?? 0;
+              }
+              return 0;
+            }
+            sortedRankings.sort((a, b) {
+              final aName = (a.data() as Map<String, dynamic>)['puzzleName'] ?? '';
+              final bName = (b.data() as Map<String, dynamic>)['puzzleName'] ?? '';
+              return extractPuzzleNumber(aName).compareTo(extractPuzzleNumber(bName));
+            });
             final currentUser = FirebaseAuth.instance.currentUser;
-            List<Widget> rankingWidgets = rankings
+            List<Widget> rankingWidgets = sortedRankings
                 .map<Widget>((doc) {
                   final data = doc.data() as Map<String, dynamic>;
                   final topTimes = data['topTimes'] as List<dynamic>;
@@ -163,7 +187,7 @@ class RankingScreen extends StatelessWidget {
                                 ),
                                 const SizedBox(height: 6),
                                 Text(
-                                  '${isPortuguese ? 'Melhor tempo' : 'Best time'}: ${bestTime['time']}s',
+                                  '${isPortuguese ? 'Melhor tempo' : 'Best time'}: ${formatTime(bestTime['time'] is int ? bestTime['time'] : int.tryParse(bestTime['time'].toString()) ?? 0)}',
                                   style: TextStyle(
                                     color: isDarkMode ? Colors.white : Colors.black,
                                     fontSize: 14,
@@ -178,7 +202,7 @@ class RankingScreen extends StatelessWidget {
                                 ),
                                 if (seuMelhorTempo != null && !isRecordHolder)
                                   Text(
-                                    '${isPortuguese ? 'Seu melhor tempo' : 'Your best time'}: ${seuMelhorTempo}s',
+                                    '${isPortuguese ? 'Seu melhor tempo' : 'Your best time'}: ${formatTime(seuMelhorTempo)}',
                                     style: TextStyle(
                                       color: isDarkMode ? Colors.amber : Colors.deepOrange,
                                       fontSize: 13,

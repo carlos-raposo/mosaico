@@ -25,7 +25,7 @@ class SettingsPage extends StatefulWidget {
   final bool isAuthenticated;
 
   const SettingsPage({
-    Key? key,
+    super.key,
     required this.isDarkMode,
     required this.soundEnabled,
     required this.locale,
@@ -35,7 +35,7 @@ class SettingsPage extends StatefulWidget {
     required this.onLogout,
     this.onDeleteAccount,
     required this.isAuthenticated,
-  }) : super(key: key);
+  });
 
   @override
   State<SettingsPage> createState() => _SettingsPageState();
@@ -103,6 +103,7 @@ class _SettingsPageState extends State<SettingsPage> {
       }
       await FirebaseFirestore.instance.collection('users').doc(user.uid).update({'username': newUsername});
       setState(() { _initialUsername = newUsername; });
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(_currentLocale.languageCode == 'pt' ? 'Username atualizado!' : 'Username updated!'), backgroundColor: Colors.green),
       );
@@ -391,7 +392,12 @@ class _SettingsPageState extends State<SettingsPage> {
               leading: Icon(Icons.clear_all, color: iconColor),
               title: Text('Limpar Cache Local', style: TextStyle(color: textColor)),
               subtitle: Text('Remove dados temporários salvos no dispositivo', 
-                           style: TextStyle(color: textColor.withOpacity(0.7))),
+                           style: TextStyle(color: textColor.withValues(
+                             red: ((textColor.r * 255.0).round() & 0xff).toDouble(),
+                             green: ((textColor.g * 255.0).round() & 0xff).toDouble(),
+                             blue: ((textColor.b * 255.0).round() & 0xff).toDouble(),
+                             alpha: 0.7 * 255,
+                           ))),
               onTap: () async {
                 bool? confirmClear = await showDialog<bool>(
                   context: context,
@@ -642,7 +648,9 @@ class _SettingsPageState extends State<SettingsPage> {
             rows = cols = (targetPuzzle.pieceCount > 0) ? sqrt(targetPuzzle.pieceCount).round() : 4;
           }
           
-          return await Navigator.of(context).push<Map<String, dynamic>>(
+          final BuildContext navContext = context;
+          if (!mounted) return null;
+          return await Navigator.of(navContext).push<Map<String, dynamic>>(
             MaterialPageRoute(
               builder: (context) => GameScreen(
                 title: targetPuzzle.name,
@@ -650,9 +658,9 @@ class _SettingsPageState extends State<SettingsPage> {
                 rows: rows,
                 cols: cols,
                 confettiController: ConfettiController(duration: const Duration(seconds: 6)),
-                locale: Localizations.localeOf(context),
+                locale: Localizations.localeOf(navContext),
                 isAuthenticated: true,
-                isDarkMode: Theme.of(context).brightness == Brightness.dark,
+                isDarkMode: Theme.of(navContext).brightness == Brightness.dark,
               ),
             ),
           );

@@ -19,7 +19,7 @@ class ProgressService {
     
     // Se mudou de usuário, limpa o cache
     if (_cachedUserId != currentUserId) {
-      debugPrint('User changed from ${_cachedUserId} to ${currentUserId} - clearing cache');
+  debugPrint('User changed from $_cachedUserId to $currentUserId - clearing cache');
       _cachedUnlockedPuzzles.clear();
       _cachedUserId = currentUserId;
     }

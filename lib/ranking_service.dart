@@ -202,8 +202,8 @@ class RankingService {
       }
 
       final data = snapshot.data();
-      if (data == null || data is! Map<String, dynamic>) {
-  debugPrint('Invalid data format for puzzleId: $puzzleId');
+      if (data == null) {
+        debugPrint('Invalid data format for puzzleId: $puzzleId');
         return false;
       }
 
@@ -244,11 +244,11 @@ class RankingService {
         });
       }
 
-      topTimesList.forEach((entry) {
+      for (var entry in topTimesList) {
         if (entry['time'] is String) {
           entry['time'] = int.tryParse(entry['time']) ?? 0;
         }
-      });
+      }
 
       topTimesList.sort((a, b) => (a['time'] as int).compareTo(b['time'] as int));
 
@@ -256,7 +256,7 @@ class RankingService {
   topTimesList.removeLast();
       }
 
-      print('Updating ranking document for puzzleId: $puzzleId with topTimes: $topTimesList');
+  debugPrint('Updating ranking document for puzzleId: $puzzleId with topTimes: $topTimesList');
       debugPrint('Updating ranking document for puzzleId: $puzzleId with topTimes: $topTimesList');
       transaction.update(rankingRef, {
         'puzzleId': puzzleId,

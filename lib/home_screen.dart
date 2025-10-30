@@ -103,11 +103,14 @@ class HomeScreen extends StatelessWidget {
                       onLogout: () async {
                         try {
                           await Future.delayed(const Duration(milliseconds: 100));
+                          if (!context.mounted) return;
                           await Navigator.of(context).pushNamedAndRemoveUntil('/auth', (route) => false);
                         } catch (e) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Erro ao sair: $e')),
-                          );
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Erro ao sair: $e')),
+                            );
+                          }
                         }
                       },
                       onDeleteAccount: null,
@@ -239,7 +242,9 @@ class HomeScreen extends StatelessWidget {
                         letterSpacing: 1.0,
                       ),
                     ),
-                    onPressed: () {
+                    onPressed: () async {
+                      await Future.delayed(Duration.zero);
+                      if (!context.mounted) return;
                       Navigator.of(context).push(
                         MaterialPageRoute(
                           builder: (context) => _FakeCollectionSelectionRoute(soundEnabled: soundEnabled),
@@ -319,7 +324,7 @@ class HomeScreen extends StatelessWidget {
 
 class _FakeCollectionSelectionRoute extends StatelessWidget {
   final bool soundEnabled;
-  const _FakeCollectionSelectionRoute({Key? key, required this.soundEnabled}) : super(key: key);
+  const _FakeCollectionSelectionRoute({required this.soundEnabled});
   @override
   Widget build(BuildContext context) {
     // Dados mockados para demonstração
@@ -363,7 +368,7 @@ class _FakeCollectionSelectionRoute extends StatelessWidget {
             name: 'Puzzle 6',
             imagePath: 'assets/images/col_1/puzzle6.png',
             pieceFolder: 'assets/images/col_1/puzzle6/4x4/',
-            pieceCount: 25,
+            pieceCount: 16,
           ),
           PuzzleData(
             name: 'Puzzle 7',
@@ -380,14 +385,14 @@ class _FakeCollectionSelectionRoute extends StatelessWidget {
           PuzzleData(
             name: 'Puzzle 9',
             imagePath: 'assets/images/col_1/puzzle9.png',
-            pieceFolder: 'assets/images/col_1/puzzle9/4x4/',
-            pieceCount: 16,
+            pieceFolder: 'assets/images/col_1/puzzle9/5x5/',
+            pieceCount: 25,
           ),
           PuzzleData(
             name: 'Puzzle 10',
             imagePath: 'assets/images/col_1/puzzle10.png',
             pieceFolder: 'assets/images/col_1/puzzle10/4x4/',
-            pieceCount: 40,
+            pieceCount: 16,
           ),
         ],
       ),

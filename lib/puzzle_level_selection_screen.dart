@@ -10,11 +10,11 @@ class PuzzleLevelSelectionScreen extends StatelessWidget {
   final String puzzleImagePath;
 
   const PuzzleLevelSelectionScreen({
-    Key? key,
+    super.key,
     required this.collectionName,
     required this.puzzleName,
     required this.puzzleImagePath,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

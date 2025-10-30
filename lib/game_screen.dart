@@ -359,8 +359,9 @@ class _GameScreenState extends State<GameScreen> {
                         itemBuilder: (BuildContext context, int index) {
                           final label = _sections[index];
                           return DragTarget<String>(
-                            onWillAccept: (data) => _isPlaying,
-                            onAccept: (data) {
+                            onWillAcceptWithDetails: (details) => _isPlaying,
+                            onAcceptWithDetails: (details) {
+                              final data = details.data;
                               if (_isPlaying) {
                                 setState(() {
                                   final fromIndex = _sections.indexOf(data);

@@ -6,12 +6,15 @@ import 'style_guide.dart';
 import 'ranking_service.dart';
 import 'best_times_service.dart';
 
+
 class AuthPage extends StatefulWidget {
+  const AuthPage({super.key});
+
   @override
-  _AuthPageState createState() => _AuthPageState();
+  AuthPageState createState() => AuthPageState();
 }
 
-class _AuthPageState extends State<AuthPage> {
+class AuthPageState extends State<AuthPage> {
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
@@ -37,6 +40,7 @@ class _AuthPageState extends State<AuthPage> {
       await defaultGoogleSignIn.signOut();
       await defaultGoogleSignIn.disconnect();
     } catch (e) {
+      // Ignore errors: session may not exist or already signed out
     }
 
     // Try with a fresh instance
@@ -45,6 +49,7 @@ class _AuthPageState extends State<AuthPage> {
       await freshGoogleSignIn.signOut();
       await freshGoogleSignIn.disconnect();
     } catch (e) {
+      // Ignore errors: session may not exist or already signed out
     }
   }
 
@@ -151,6 +156,7 @@ class _AuthPageState extends State<AuthPage> {
           .get();
       final List<DocumentSnapshot> usernameDocuments = usernameResult.docs;
       if (usernameDocuments.isNotEmpty) {
+        if (!mounted) return;
         _showErrorDialog(_isPortuguese() ? 'Nome de usuário já em uso. Escolha outro.' : 'Username already in use. Choose another.');
         return;
       }
@@ -162,6 +168,7 @@ class _AuthPageState extends State<AuthPage> {
           .get();
       final List<DocumentSnapshot> emailDocuments = emailResult.docs;
       if (emailDocuments.isNotEmpty) {
+        if (!mounted) return;
         _showErrorDialog(_isPortuguese() ? 'Email já em uso. Escolha outro.' : 'Email already in use. Choose another.');
         return;
       }
@@ -181,9 +188,11 @@ class _AuthPageState extends State<AuthPage> {
         // REMOVIDO: Não sincronizar tempos para novos usuários
         // Novos usuários começam limpos, sem tempos offline de outros usuários
 
+        if (!mounted) return;
         Navigator.pushReplacementNamed(context, '/');
       } catch (e) {
-        print('Error: $e');
+        debugPrint('Error: $e');
+        if (!mounted) return;
         _showErrorDialog(e.toString());
       }
     }
@@ -206,7 +215,7 @@ class _AuthPageState extends State<AuthPage> {
 
       Navigator.pushReplacementNamed(context, '/');
     } catch (e) {
-      print('Error: $e');
+      debugPrint('Error: $e');
       _showErrorDialog(e.toString());
     }
   }
@@ -328,7 +337,7 @@ class _AuthPageState extends State<AuthPage> {
         }
       }
     } catch (e) {
-      print('Error signing in with Google: $e');
+      debugPrint('Error signing in with Google: $e');
       String errorMessage = _isPortuguese() 
           ? 'Erro ao fazer login com o Google. Verifique sua conexão e tente novamente.'
           : 'Error signing in with Google. Please check your connection and try again.';

@@ -55,7 +55,7 @@ class _CollectionSelectionScreenState extends State<CollectionSelectionScreen> w
     // FORÇA reload completo do cache para garantir dados atualizados
     await _progressService.forceReloadCache();
     final unlocked = await _progressService.getUnlockedPuzzles();
-    print('Puzzles desbloqueados carregados: $unlocked'); // Debug
+    debugPrint('Puzzles desbloqueados carregados: $unlocked'); // Debug
     
     if (mounted) {
       setState(() {
@@ -103,7 +103,7 @@ class _CollectionSelectionScreenState extends State<CollectionSelectionScreen> w
                 ),
               ).then((_) {
                 // FORÇA reload quando volta das configurações
-                print('Voltou das configurações - forçando reload dos puzzles');
+                debugPrint('Voltou das configurações - forçando reload dos puzzles');
                 _loadUnlockedPuzzles();
               });
             },
@@ -163,7 +163,7 @@ class _CollectionSelectionScreenState extends State<CollectionSelectionScreen> w
                               fit: BoxFit.cover,
                               width: double.infinity,
                               height: double.infinity,
-                              color: isUnlocked ? null : Colors.black.withOpacity(0.6),
+                              color: isUnlocked ? null : Colors.black.withAlpha((0.6 * 255).round()),
                               colorBlendMode: isUnlocked ? null : BlendMode.darken,
                             ),
                             if (!isUnlocked)
@@ -172,7 +172,7 @@ class _CollectionSelectionScreenState extends State<CollectionSelectionScreen> w
                                 height: double.infinity,
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(16),
-                                  color: Colors.black.withOpacity(0.3),
+                                  color: Colors.black.withAlpha((0.3 * 255).round()),
                                 ),
                                 child: Icon(
                                   Icons.lock,
