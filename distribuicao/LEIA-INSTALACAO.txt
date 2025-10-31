@@ -1,0 +1,13 @@
+# Instalação do App Mosaico
+
+## Android
+1. Baixe o arquivo `app-release.apk` disponível nesta pasta.
+2. No seu celular, abra o arquivo e siga as instruções para instalar.
+   - Pode ser necessário permitir a instalação de apps de fontes desconhecidas.
+3. O app estará disponível na sua lista de aplicativos.
+
+## iOS
+- A instalação direta não é permitida por limitações da Apple.
+- Para testar no iOS, é necessário usar TestFlight ou instalar via Xcode (apenas para desenvolvedores).
+
+Dúvidas? Entre em contato pelo site.
