@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CLIENT_ID</key>
+	<string>517915885966-c72l8deeggr8r9slke2e7j2h7j8b7nn9.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.517915885966-c72l8deeggr8r9slke2e7j2h7j8b7nn9</string>
+	<key>ANDROID_CLIENT_ID</key>
+	<string>517915885966-0atn55stsogop7fuvt7in7041ak3ubuk.apps.googleusercontent.com</string>
+	<key>API_KEY</key>
+	<string>AIzaSyAc1Zdi98Ejmyne9c7f_aqE6ygtD22m1vs</string>
+	<key>GCM_SENDER_ID</key>
+	<string>517915885966</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>com.example.muzaiko</string>
+	<key>PROJECT_ID</key>
+	<string>muzaico-bb279</string>
+	<key>STORAGE_BUCKET</key>
+	<string>muzaico-bb279.firebasestorage.app</string>
+	<key>IS_ADS_ENABLED</key>
+	<false/>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false/>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true/>
+	<key>IS_GCM_ENABLED</key>
+	<true/>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true/>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:517915885966:ios:f80d2efb0b954d9ba0e4df</string>
+</dict>
+</plist>

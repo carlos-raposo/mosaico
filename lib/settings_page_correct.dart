@@ -42,6 +42,9 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
+  // Configure GoogleSignIn instance
+  final GoogleSignIn _googleSignIn = GoogleSignIn();
+
   final TextEditingController _usernameController = TextEditingController();
   String? _initialUsername;
   bool _isLoadingUsername = false;
@@ -362,12 +365,12 @@ class _SettingsPageState extends State<SettingsPage> {
                     debugPrint('Error clearing progress cache: $e');
                   }
                   try {
-                    await GoogleSignIn.instance.signOut();
-                    await GoogleSignIn.instance.disconnect();
+                    await _googleSignIn.signOut();
+                    await _googleSignIn.disconnect();
                   } catch (e) {
                     debugPrint('Error with Google disconnect, trying signOut again: $e');
                     try {
-                      await GoogleSignIn.instance.signOut();
+                      await _googleSignIn.signOut();
                     } catch (e2) {
                       debugPrint('Error signing out from Google: $e2');
                     }

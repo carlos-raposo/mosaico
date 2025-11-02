@@ -214,12 +214,12 @@ class HomeScreen extends StatelessWidget {
                       );
                     },
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 8),
                   ElevatedButton.icon(   /// PLAY button
                     style: ElevatedButton.styleFrom(
                       backgroundColor: isDarkMode ? AppColors.buttonBgBlue : AppColors.buttonBgWhite,
                       foregroundColor: isDarkMode ? Colors.black : Colors.black,
-                      minimumSize: const Size(double.infinity, 44),
+                      minimumSize: const Size(double.infinity, 40),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                      side: BorderSide(
                         color: isDarkMode ? AppColors.buttonBorderDark : AppColors.buttonBorderLight,
@@ -252,7 +252,7 @@ class HomeScreen extends StatelessWidget {
                       );
                     },
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 8),
                   ElevatedButton.icon(   /// Ranking Button
                     style: ElevatedButton.styleFrom(
                       backgroundColor: isDarkMode ?AppColors.buttonBgBlue : AppColors.buttonBgWhite,

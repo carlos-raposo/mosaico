@@ -30,6 +30,14 @@
           }
         },
         {
+          "client_id": "517915885966-rn81oglqdqnakrs7isvp0d1tr6h8tfvn.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.uniteddreamsstates.muzaiko",
+            "certificate_hash": "7377058cd88d6ca97a02afd63d27d5b9451b5471"
+          }
+        },
+        {
           "client_id": "517915885966-q6e89m2rqiaqjoq49uaqn0no6aov537j.apps.googleusercontent.com",
           "client_type": 3
         }
@@ -45,6 +53,13 @@
             {
               "client_id": "517915885966-q6e89m2rqiaqjoq49uaqn0no6aov537j.apps.googleusercontent.com",
               "client_type": 3
+            },
+            {
+              "client_id": "517915885966-c72l8deeggr8r9slke2e7j2h7j8b7nn9.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.muzaiko"
+              }
             }
           ]
         }

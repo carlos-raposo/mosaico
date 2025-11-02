@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:google_sign_in/google_sign_in.dart'; // Add this import
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
+import 'package:crypto/crypto.dart';
+import 'dart:convert';
+import 'dart:math';
+import 'dart:io' show Platform;
 import 'style_guide.dart';
 import 'ranking_service.dart';
 import 'best_times_service.dart';
@@ -22,32 +27,34 @@ class AuthPageState extends State<AuthPage> {
   bool _isLogin = true;
   bool _obscurePassword = true;
   final _formKey = GlobalKey<FormState>();
+  bool _googleSignInInitialized = false;
   
-  // Method to create a fresh GoogleSignIn instance
-  GoogleSignIn _createFreshGoogleSignIn() {
-    return GoogleSignIn(
-      scopes: ['email'],
-      // Force account selection on every sign-in
-      forceCodeForRefreshToken: true,
-    );
+  @override
+  void initState() {
+    super.initState();
+    _initializeGoogleSignIn();
   }
-
+  
+  // Initialize Google Sign-In once at startup
+  Future<void> _initializeGoogleSignIn() async {
+    if (_googleSignInInitialized) return;
+    try {
+      await GoogleSignIn.instance.initialize(
+        serverClientId: '517915885966-q6e89m2rqiaqjoq49uaqn0no6aov537j.apps.googleusercontent.com',
+      );
+      _googleSignInInitialized = true;
+      debugPrint('Google Sign-In initialized successfully');
+    } catch (e) {
+      debugPrint('Error initializing Google Sign-In: $e');
+    }
+  }
+  
   // Method to aggressively clear all Google Sign-In sessions
   Future<void> _clearAllGoogleSessions() async {
-    // Try with the default instance
+    // Try with the instance
     try {
-      final GoogleSignIn defaultGoogleSignIn = GoogleSignIn();
-      await defaultGoogleSignIn.signOut();
-      await defaultGoogleSignIn.disconnect();
-    } catch (e) {
-      // Ignore errors: session may not exist or already signed out
-    }
-
-    // Try with a fresh instance
-    try {
-      final GoogleSignIn freshGoogleSignIn = _createFreshGoogleSignIn();
-      await freshGoogleSignIn.signOut();
-      await freshGoogleSignIn.disconnect();
+      await GoogleSignIn.instance.signOut();
+      await GoogleSignIn.instance.disconnect();
     } catch (e) {
       // Ignore errors: session may not exist or already signed out
     }
@@ -269,6 +276,80 @@ class AuthPageState extends State<AuthPage> {
     );
   }
 
+  // Password reset method
+  Future<void> _resetPassword() async {
+    final TextEditingController emailController = TextEditingController();
+    
+    return showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(_isPortuguese() ? 'Recuperar Senha' : 'Reset Password'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                _isPortuguese() 
+                    ? 'Digite seu email para receber o link de recuperação de senha.'
+                    : 'Enter your email to receive the password reset link.',
+                style: const TextStyle(fontSize: 14),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: emailController,
+                decoration: InputDecoration(
+                  labelText: 'Email',
+                  border: const OutlineInputBorder(),
+                  hintText: _isPortuguese() ? 'seu@email.com' : 'your@email.com',
+                ),
+                keyboardType: TextInputType.emailAddress,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(_isPortuguese() ? 'Cancelar' : 'Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final email = emailController.text.trim();
+                if (email.isEmpty) {
+                  _showErrorDialog(_isPortuguese() 
+                      ? 'Por favor, digite um email.' 
+                      : 'Please enter an email.');
+                  return;
+                }
+                
+                try {
+                  await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
+                  Navigator.of(context).pop();
+                  _showErrorDialog(_isPortuguese()
+                      ? 'Email de recuperação enviado! Verifique sua caixa de entrada.'
+                      : 'Password reset email sent! Check your inbox.');
+                } catch (e) {
+                  Navigator.of(context).pop();
+                  String errorMessage = _isPortuguese()
+                      ? 'Erro ao enviar email. Verifique se o email está correto.'
+                      : 'Error sending email. Please check if the email is correct.';
+                  
+                  if (e.toString().contains('user-not-found')) {
+                    errorMessage = _isPortuguese()
+                        ? 'Email não encontrado. Verifique o endereço digitado.'
+                        : 'Email not found. Please check the address.';
+                  }
+                  
+                  _showErrorDialog(errorMessage);
+                }
+              },
+              child: Text(_isPortuguese() ? 'Enviar' : 'Send'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   bool _isPortuguese() {
     return Localizations.localeOf(context).languageCode == 'pt';
   }
@@ -276,17 +357,31 @@ class AuthPageState extends State<AuthPage> {
   // Add Google Sign In method
   Future<void> _signInWithGoogle() async {
     try {
-      // Aggressively clear all existing Google sessions first
-      await _clearAllGoogleSessions();
+      // Make sure Google Sign-In is initialized
+      if (!_googleSignInInitialized) {
+        await _initializeGoogleSignIn();
+      }
       
-      // Create a fresh GoogleSignIn instance to avoid cached sessions
-      final GoogleSignIn googleSignIn = _createFreshGoogleSignIn();
+      // Use the singleton GoogleSignIn instance
+      final GoogleSignIn googleSignIn = GoogleSignIn.instance;
       
       // Begin interactive sign in process
-      final GoogleSignInAccount? gUser = await googleSignIn.signIn();
-      
-      // If the user cancels the sign-in flow, return
-      if (gUser == null) return;
+      final GoogleSignInAccount gUser;
+      try {
+        debugPrint('Starting Google authentication...');
+        // Use authenticate() with scope hint
+        gUser = await googleSignIn.authenticate(
+          scopeHint: ['email'],
+        );
+        debugPrint('Google authentication succeeded!');
+      } catch (e) {
+        debugPrint('Google authentication failed: $e');
+        // User cancelled or authentication failed  
+        if (e.toString().contains('SIGN_IN_CANCELLED') || e.toString().contains('cancelled') || e.toString().contains('canceled')) {
+          return; // User cancelled - silently return
+        }
+        rethrow; // Re-throw other errors
+      }
       
       // Check if this Google account is already registered in our app
       final bool accountExists = await _checkIfGoogleAccountExists(gUser.email);
@@ -336,21 +431,23 @@ class AuthPageState extends State<AuthPage> {
           await _completeGoogleSignIn(googleSignIn, gUser, username);
         }
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
       debugPrint('Error signing in with Google: $e');
+      debugPrint('Stack trace: $stackTrace');
+      
       String errorMessage = _isPortuguese() 
           ? 'Erro ao fazer login com o Google. Verifique sua conexão e tente novamente.'
           : 'Error signing in with Google. Please check your connection and try again.';
       
       // Provide more specific error message for common issues
-      if (e.toString().contains('network_error')) {
+      if (e.toString().contains('network_error') || e.toString().contains('NetworkError')) {
         errorMessage = _isPortuguese()
             ? 'Erro de rede. Verifique sua conexão com a internet.'
             : 'Network error. Please check your internet connection.';
-      } else if (e.toString().contains('10:')) {
+      } else if (e.toString().contains('10:') || e.toString().contains('PlatformException')) {
         errorMessage = _isPortuguese()
-            ? 'Erro de configuração. Por favor, contate o suporte.'
-            : 'Configuration error. Please contact support.';
+            ? 'Erro de configuração do Google Sign-In. Detalhes: ${e.toString()}'
+            : 'Google Sign-In configuration error. Details: ${e.toString()}';
       }
       
       _showErrorDialog(errorMessage);
@@ -359,37 +456,193 @@ class AuthPageState extends State<AuthPage> {
 
   // Helper method to complete Google sign-in process
   Future<void> _completeGoogleSignIn(GoogleSignIn googleSignIn, GoogleSignInAccount gUser, String? username) async {
-    // Obtain auth details from request
-    final GoogleSignInAuthentication gAuth = await gUser.authentication;
-    
-    // Create a new credential for the user
-    final credential = GoogleAuthProvider.credential(
-      accessToken: gAuth.accessToken,
-      idToken: gAuth.idToken,
-    );
-    
-    // Sign in with Firebase
-    final UserCredential userCredential = 
-        await FirebaseAuth.instance.signInWithCredential(credential);
-    
-    // If this is a new account (signup), save user info to Firestore
-    if (username != null) {
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(userCredential.user!.uid)
-          .set({
-            'username': username,
-            'email': userCredential.user?.email ?? '',
-            'unlockedPuzzles': [1], // Novos utilizadores começam apenas com Puzzle 1
-          });
+    try {
+      // Obtain auth details using the GoogleSignIn v7.2.0 API
+      debugPrint('Getting authentication tokens...');
+      
+      // Get idToken from authentication property
+      final GoogleSignInAuthentication authentication = gUser.authentication;
+      debugPrint('Got authentication. idToken: ${authentication.idToken != null ? "exists" : "null"}');
+      
+      // Get accessToken from authorizationClient
+      final GoogleSignInClientAuthorization? authorization = await gUser.authorizationClient.authorizationForScopes(['email']);
+      debugPrint('Got authorization. accessToken: ${authorization?.accessToken != null ? "exists" : "null"}');
+      
+      // Create a new credential for the user
+      final credential = GoogleAuthProvider.credential(
+        accessToken: authorization?.accessToken,
+        idToken: authentication.idToken,
+      );
+      
+      debugPrint('Created Firebase credential, signing in...');
+      
+      // Sign in with Firebase
+      final UserCredential userCredential = 
+          await FirebaseAuth.instance.signInWithCredential(credential);
+      
+      debugPrint('Successfully signed in to Firebase. User: ${userCredential.user?.email}');
+      
+      // If this is a new account (signup), save user info to Firestore
+      if (username != null) {
+        debugPrint('Creating new user document in Firestore with username: $username');
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(userCredential.user!.uid)
+            .set({
+              'username': username,
+              'email': userCredential.user?.email ?? '',
+              'unlockedPuzzles': [1], // Novos utilizadores começam apenas com Puzzle 1
+            });
+      }
+      
+      // Limpa dados compartilhados problemáticos (não sincroniza mais automaticamente)
+      final rankingService = RankingService();
+      await rankingService.syncOfflineTimesToFirestore();
+      
+      debugPrint('Navigating to home page...');
+      // Navigate to Collections page
+      if (!mounted) return;
+      Navigator.pushReplacementNamed(context, '/');
+    } catch (e, stackTrace) {
+      debugPrint('Error in _completeGoogleSignIn: $e');
+      debugPrint('Stack trace: $stackTrace');
+      rethrow;
     }
-    
-    // Limpa dados compartilhados problemáticos (não sincroniza mais automaticamente)
-    final rankingService = RankingService();
-    await rankingService.syncOfflineTimesToFirestore();
-    
-    // Navigate to Collections page
-    Navigator.pushReplacementNamed(context, '/');
+  }
+
+  // Add Sign in with Apple method
+  Future<void> _signInWithApple() async {
+    try {
+      // Generate nonce for security
+      final rawNonce = _generateNonce();
+      final nonce = _sha256ofString(rawNonce);
+
+      // Request Apple ID credential
+      final appleCredential = await SignInWithApple.getAppleIDCredential(
+        scopes: [
+          AppleIDAuthorizationScopes.email,
+          AppleIDAuthorizationScopes.fullName,
+        ],
+        nonce: nonce,
+        // Required for Android - web authentication
+        webAuthenticationOptions: WebAuthenticationOptions(
+          clientId: 'com.mosaico.signin.firebase', // Service ID from Apple Developer
+          redirectUri: Uri.parse('https://muzaico-bb279.firebaseapp.com/__/auth/handler'),
+        ),
+      );
+
+      // Create OAuth credential for Firebase
+      final oauthCredential = OAuthProvider("apple.com").credential(
+        idToken: appleCredential.identityToken,
+        rawNonce: rawNonce,
+        accessToken: appleCredential.authorizationCode,
+      );
+
+      // Sign in to Firebase
+      final UserCredential userCredential =
+          await FirebaseAuth.instance.signInWithCredential(oauthCredential);
+
+      debugPrint('Successfully signed in with Apple. User: ${userCredential.user?.email}');
+
+      // Check if this is a new user
+      final isNewUser = userCredential.additionalUserInfo?.isNewUser ?? false;
+      final user = userCredential.user;
+      
+      if (user == null) return;
+
+      // Check if user document exists in Firestore
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+
+      if (!userDoc.exists) {
+        // New user - need to collect username
+        String? displayName;
+        
+        // Try to get name from Apple credential
+        if (appleCredential.givenName != null && appleCredential.familyName != null) {
+          displayName = '${appleCredential.givenName} ${appleCredential.familyName}';
+        } else if (appleCredential.givenName != null) {
+          displayName = appleCredential.givenName;
+        }
+        
+        final String? username = await _showUsernameDialog(
+          displayName ?? user.email ?? 'User',
+        );
+        
+        if (username == null) {
+          // User cancelled - sign out and delete account
+          await user.delete();
+          await FirebaseAuth.instance.signOut();
+          return;
+        }
+
+        // Check if username is already taken
+        final QuerySnapshot usernameResult = await FirebaseFirestore.instance
+            .collection('users')
+            .where('username', isEqualTo: username)
+            .get();
+
+        if (usernameResult.docs.isNotEmpty) {
+          _showErrorDialog(_isPortuguese()
+              ? 'Nome de usuário já em uso. Tente novamente com outro nome.'
+              : 'Username already in use. Please try again with another name.');
+          await user.delete();
+          await FirebaseAuth.instance.signOut();
+          return;
+        }
+
+        // Create user document
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .set({
+          'username': username,
+          'email': user.email ?? '',
+          'unlockedPuzzles': [1],
+        });
+      }
+
+      // Sync offline data
+      final rankingService = RankingService();
+      await rankingService.syncOfflineTimesToFirestore();
+
+      debugPrint('Navigating to home page...');
+      if (!mounted) return;
+      Navigator.pushReplacementNamed(context, '/');
+      
+    } catch (e, stackTrace) {
+      debugPrint('Error signing in with Apple: $e');
+      debugPrint('Stack trace: $stackTrace');
+
+      // Handle user cancellation
+      if (e.toString().contains('AuthorizationErrorCode.canceled') ||
+          e.toString().contains('1001')) {
+        // User cancelled - silently return
+        return;
+      }
+
+      String errorMessage = _isPortuguese()
+          ? 'Erro ao fazer login com Apple. Verifique sua conexão e tente novamente.'
+          : 'Error signing in with Apple. Please check your connection and try again.';
+
+      _showErrorDialog(errorMessage);
+    }
+  }
+
+  // Generate nonce for Apple Sign In
+  String _generateNonce([int length = 32]) {
+    const charset = '0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._';
+    final random = Random.secure();
+    return List.generate(length, (_) => charset[random.nextInt(charset.length)]).join();
+  }
+
+  // SHA256 hash for nonce
+  String _sha256ofString(String input) {
+    final bytes = utf8.encode(input);
+    final digest = sha256.convert(bytes);
+    return digest.toString();
   }
 
   // Show dialog when account doesn't exist during login
@@ -522,19 +775,21 @@ class AuthPageState extends State<AuthPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          _isLogin ? 'Login' : 'Create Account',
-          style: AppStyles.title(context),
+    return GestureDetector(
+      onTap: () => FocusScope.of(context).unfocus(), // Fecha o teclado ao tocar fora
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(
+            _isLogin ? 'Login' : 'Create Account',
+            style: AppStyles.title(context),
+          ),
         ),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: SingleChildScrollView(
-          child: Form(
-            key: _formKey,
-            child: Column(
+        body: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: SingleChildScrollView(
+            child: Form(
+              key: _formKey,
+              child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 const SizedBox(height: 40), // Distância de 50px do topo
@@ -633,6 +888,19 @@ class AuthPageState extends State<AuthPage> {
                     style: AppStyles.buttonText(context, fontSize: 16),
                   ),
                 ),
+                
+                // Forgot password button (only show on login screen)
+                if (_isLogin)
+                  TextButton(
+                    onPressed: _resetPassword,
+                    child: Text(
+                      _isPortuguese() ? 'Esqueceu a senha?' : 'Forgot password?',
+                      style: AppStyles.subtitle(context).copyWith(
+                        decoration: TextDecoration.underline,
+                      ),
+                    ),
+                  ),
+                
                 TextButton(
                   onPressed: _toggleFormType,
                   child: Text(
@@ -656,7 +924,7 @@ class AuthPageState extends State<AuthPage> {
                   ),
                 ),
                 
-                // Add Google Sign-In button with local icon instead of network image
+                // Add Google Sign-In button
                 ElevatedButton.icon(
                   icon: const Icon(Icons.g_mobiledata, size: 24, color: Colors.blue),
                   label: Text(
@@ -672,7 +940,28 @@ class AuthPageState extends State<AuthPage> {
                   onPressed: _signInWithGoogle,
                 ),
                 
-                const SizedBox(height: 16),
+                const SizedBox(height: 12),
+                
+                // Add Sign in with Apple button (iOS only)
+                if (Platform.isIOS) ...[
+                  ElevatedButton.icon(
+                    icon: const Icon(Icons.apple, size: 24, color: Colors.white),
+                    label: Text(
+                      _isPortuguese() ? 'Continuar com Apple' : 'Continue with Apple',
+                      overflow: TextOverflow.ellipsis,
+                      style: AppStyles.buttonText(context, fontSize: 16).copyWith(color: Colors.white),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.black,
+                      foregroundColor: Colors.white,
+                      minimumSize: const Size(double.infinity, 50),
+                    ),
+                    onPressed: _signInWithApple,
+                  ),
+                  const SizedBox(height: 12),
+                ],
+                
+                const SizedBox(height: 4),
                 
                 TextButton(
                   onPressed: _startWithoutAuth,
@@ -687,6 +976,7 @@ class AuthPageState extends State<AuthPage> {
             ),
           ),
         ),
+      ),
       ),
     );
   }
