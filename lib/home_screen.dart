@@ -243,13 +243,53 @@ class HomeScreen extends StatelessWidget {
                       ),
                     ),
                     onPressed: () async {
-                      await Future.delayed(Duration.zero);
-                      if (!context.mounted) return;
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => _FakeCollectionSelectionRoute(soundEnabled: soundEnabled),
-                        ),
-                      );
+                      final isAuthenticated = FirebaseAuth.instance.currentUser != null;
+                      
+                      if (!isAuthenticated) {
+                        // Mostra aviso se não estiver autenticado
+                        showDialog(
+                          context: context,
+                          builder: (context) {
+                            return AlertDialog(
+                              title: Text(Localizations.localeOf(context).languageCode == 'pt' ? 'Aviso' : 'Warning'),
+                              content: Text(Localizations.localeOf(context).languageCode == 'pt'
+                                  ? 'Se entrar sem autentificação não poderá registar nem ver os melhores tempos no ranking global.'
+                                  : 'If you enter without authentication, you will not be able to register or see the best times in the global ranking.'),
+                              actions: [
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.of(context).pop();
+                                    Navigator.of(context).pushNamed('/auth');
+                                  },
+                                  child: Text(Localizations.localeOf(context).languageCode == 'pt' ? 'Autentificar' : 'Authenticate'),
+                                ),
+                                TextButton(
+                                  onPressed: () async {
+                                    Navigator.of(context).pop();
+                                    await Future.delayed(Duration.zero);
+                                    if (!context.mounted) return;
+                                    Navigator.of(context).push(
+                                      MaterialPageRoute(
+                                        builder: (context) => _FakeCollectionSelectionRoute(soundEnabled: soundEnabled),
+                                      ),
+                                    );
+                                  },
+                                  child: Text(Localizations.localeOf(context).languageCode == 'pt' ? 'Continuar' : 'Continue'),
+                                ),
+                              ],
+                            );
+                          },
+                        );
+                      } else {
+                        // Se autenticado, vai direto para o jogo
+                        await Future.delayed(Duration.zero);
+                        if (!context.mounted) return;
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => _FakeCollectionSelectionRoute(soundEnabled: soundEnabled),
+                          ),
+                        );
+                      }
                     },
                   ),
                   const SizedBox(height: 8),

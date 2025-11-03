@@ -30,17 +30,12 @@ class AuthPageState extends State<AuthPage> {
   final _formKey = GlobalKey<FormState>();
   bool _googleSignInInitialized = false;
   
-  /// Navega para home ou welcome screen baseado na preferência do usuário
+  /// Navega para home após autenticação
   Future<void> _navigateAfterAuth() async {
     if (!mounted) return;
     
-    final shouldShowWelcome = await WelcomeScreen.shouldShow();
-    
-    if (shouldShowWelcome) {
-      Navigator.pushReplacementNamed(context, '/welcome');
-    } else {
-      Navigator.pushReplacementNamed(context, '/home');
-    }
+    // Vai direto para home - welcome screen já foi mostrada no início da app
+    Navigator.pushReplacementNamed(context, '/home');
   }
   
   @override
