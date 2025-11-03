@@ -81,9 +81,15 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     final textColor = isDarkMode ? AppColors.darkText : AppColors.lightText;
     final cardColor = isDarkMode ? const Color(0xFF1E1E1E) : Colors.white;
 
-    return Scaffold(
-      backgroundColor: backgroundColor,
-      body: SafeArea(
+    return Theme(
+      data: Theme.of(context).copyWith(
+        focusColor: Colors.transparent,
+        highlightColor: Colors.transparent,
+        splashColor: Colors.transparent,
+      ),
+      child: Scaffold(
+        backgroundColor: backgroundColor,
+        body: SafeArea(
         child: Column(
           children: [
             // Header com logo
@@ -145,7 +151,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
 
             // Checkbox "Não mostrar novamente"
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0),
+              padding: const EdgeInsets.fromLTRB(24.0, 8.0, 24.0, 0.0),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -173,7 +179,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
 
             // Botões de navegação
             Padding(
-              padding: const EdgeInsets.all(24.0),
+              padding: const EdgeInsets.fromLTRB(24.0, 8.0, 24.0, 16.0),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -193,7 +199,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                     const SizedBox.shrink(),
 
                   // Botão Próximo ou Começar
-                  ElevatedButton(
+                  TextButton(
                     onPressed: () {
                       if (_currentPage < 2) {
                         _pageController.nextPage(
@@ -204,21 +210,14 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                         _finishWelcome();
                       }
                     },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: isDarkMode ? Colors.blue : const Color.fromARGB(255, 3, 104, 197),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(24),
-                      ),
-                    ),
                     child: Text(
                       _currentPage < 2
                           ? (_isPortuguese() ? 'Próximo' : 'Next')
                           : (_isPortuguese() ? 'Começar' : 'Start'),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
+                        color: isDarkMode ? Colors.blue : const Color.fromARGB(255, 3, 104, 197),
                       ),
                     ),
                   ),
@@ -228,6 +227,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
           ],
         ),
       ),
+    ),
     );
   }
 
@@ -261,25 +261,17 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
           const SizedBox(height: 16),
 
           // Descrição
-          Card(
-            color: cardColor,
-            elevation: 2,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            child: Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: Text(
-                _isPortuguese()
-                    ? 'Um tributo à arte dos azulejos em Portugal'
-                    : 'A tribute to the art of Portuguese tiles',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: textColor,
-                  fontStyle: FontStyle.italic,
-                  height: 1.5,
-                ),
-                textAlign: TextAlign.center,
-              ),
+          Text(
+            _isPortuguese()
+                ? 'Um tributo à arte dos azulejos em Portugal'
+                : 'A tribute to the art of Portuguese tiles',
+            style: TextStyle(
+              fontSize: 16,
+              color: isDarkMode ? Colors.amber : Colors.teal,
+              fontStyle: FontStyle.italic,
+              height: 1.5,
             ),
+            textAlign: TextAlign.center,
           ),
           const SizedBox(height: 24),
 
