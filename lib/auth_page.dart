@@ -10,6 +10,7 @@ import 'dart:io' show Platform;
 import 'style_guide.dart';
 import 'ranking_service.dart';
 import 'best_times_service.dart';
+import 'welcome_screen.dart';
 
 
 class AuthPage extends StatefulWidget {
@@ -28,6 +29,19 @@ class AuthPageState extends State<AuthPage> {
   bool _obscurePassword = true;
   final _formKey = GlobalKey<FormState>();
   bool _googleSignInInitialized = false;
+  
+  /// Navega para home ou welcome screen baseado na preferência do usuário
+  Future<void> _navigateAfterAuth() async {
+    if (!mounted) return;
+    
+    final shouldShowWelcome = await WelcomeScreen.shouldShow();
+    
+    if (shouldShowWelcome) {
+      Navigator.pushReplacementNamed(context, '/welcome');
+    } else {
+      Navigator.pushReplacementNamed(context, '/home');
+    }
+  }
   
   @override
   void initState() {
@@ -195,8 +209,7 @@ class AuthPageState extends State<AuthPage> {
         // REMOVIDO: Não sincronizar tempos para novos usuários
         // Novos usuários começam limpos, sem tempos offline de outros usuários
 
-        if (!mounted) return;
-        Navigator.pushReplacementNamed(context, '/');
+        await _navigateAfterAuth();
       } catch (e) {
         debugPrint('Error: $e');
         if (!mounted) return;
@@ -220,7 +233,7 @@ class AuthPageState extends State<AuthPage> {
       // final progressService = ProgressService();
       // await progressService.migrateExistingUser();
 
-      Navigator.pushReplacementNamed(context, '/');
+      await _navigateAfterAuth();
     } catch (e) {
       debugPrint('Error: $e');
       _showErrorDialog(e.toString());
@@ -244,9 +257,9 @@ class AuthPageState extends State<AuthPage> {
               child: Text(_isPortuguese() ? 'Autentificar' : 'Authenticate'),
             ),
             TextButton(
-              onPressed: () {
+              onPressed: () async {
                 Navigator.of(context).pop();
-                Navigator.pushReplacementNamed(context, '/');
+                await _navigateAfterAuth();
               },
               child: Text(_isPortuguese() ? 'Continuar' : 'Continue'),
             ),
@@ -500,9 +513,8 @@ class AuthPageState extends State<AuthPage> {
       await rankingService.syncOfflineTimesToFirestore();
       
       debugPrint('Navigating to home page...');
-      // Navigate to Collections page
-      if (!mounted) return;
-      Navigator.pushReplacementNamed(context, '/');
+      // Navigate to Collections page or welcome screen
+      await _navigateAfterAuth();
     } catch (e, stackTrace) {
       debugPrint('Error in _completeGoogleSignIn: $e');
       debugPrint('Stack trace: $stackTrace');
@@ -609,8 +621,7 @@ class AuthPageState extends State<AuthPage> {
       await rankingService.syncOfflineTimesToFirestore();
 
       debugPrint('Navigating to home page...');
-      if (!mounted) return;
-      Navigator.pushReplacementNamed(context, '/');
+      await _navigateAfterAuth();
       
     } catch (e, stackTrace) {
       debugPrint('Error signing in with Apple: $e');

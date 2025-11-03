@@ -166,7 +166,7 @@ class _SettingsPageState extends State<SettingsPage> {
               leading: Icon(Icons.home, color: iconColor),
               title: Text(_homeLabel, style: TextStyle(color: textColor)),
               onTap: () {
-                Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+                Navigator.of(context).pushNamedAndRemoveUntil('/home', (route) => false);
               },
             ),
             ListTile(
@@ -349,6 +349,19 @@ class _SettingsPageState extends State<SettingsPage> {
                 ],
               ),
             ),
+            ListTile(
+              leading: Icon(Icons.info_outline, color: iconColor),
+              title: Text(
+                _currentLocale.languageCode == 'pt' ? 'Ver Tela de Boas-Vindas' : 'View Welcome Screen',
+                style: TextStyle(color: textColor),
+              ),
+              onTap: () async {
+                // Navigate to welcome screen
+                if (!context.mounted) return;
+                Navigator.of(context).pushNamed('/welcome');
+              },
+            ),
+            Divider(color: iconColor),
             ListTile(
               leading: Icon(isAuthenticated ? Icons.logout : Icons.login, color: iconColor),
               title: Text(isAuthenticated ? _logoutLabel : _loginLabel, style: TextStyle(color: textColor)),

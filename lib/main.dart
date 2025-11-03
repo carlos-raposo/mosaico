@@ -7,6 +7,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'home_screen.dart';
 import 'settings_controller.dart';
+import 'welcome_screen.dart';
 
 // 1. Inicializa o Firebase e executa o aplicativo.
 void main() async {
@@ -22,6 +23,9 @@ void main() async {
   // Inicializa as configurações
   final settingsController = SettingsController();
   await settingsController.loadSettings();
+  
+  // Reseta a flag de sessão da tela de boas-vindas
+  await WelcomeScreen.resetSessionFlag();
   
   runApp(
     ChangeNotifierProvider.value(
@@ -71,9 +75,9 @@ class MyApp extends StatelessWidget {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      initialRoute: '/',
+      home: const InitialRouteHandler(),
       routes: {
-        '/': (context) => HomeScreen(
+        '/home': (context) => HomeScreen(
               userName: 'Jogador',
               currentLevel: 1,
               maxLevel: 10,
@@ -86,7 +90,47 @@ class MyApp extends StatelessWidget {
               toggleSound: settings.toggleSound,
             ),
         '/auth': (context) => AuthPage(),
+        '/welcome': (context) => const WelcomeScreen(),
       },
+    );
+  }
+}
+
+// 3. Widget que determina qual tela inicial mostrar
+class InitialRouteHandler extends StatefulWidget {
+  const InitialRouteHandler({super.key});
+
+  @override
+  State<InitialRouteHandler> createState() => _InitialRouteHandlerState();
+}
+
+class _InitialRouteHandlerState extends State<InitialRouteHandler> {
+  @override
+  void initState() {
+    super.initState();
+    _checkAndNavigate();
+  }
+
+  Future<void> _checkAndNavigate() async {
+    // Verifica se deve mostrar a tela de boas-vindas
+    final shouldShowWelcome = await WelcomeScreen.shouldShow();
+    
+    if (!mounted) return;
+    
+    if (shouldShowWelcome) {
+      Navigator.of(context).pushReplacementNamed('/welcome');
+    } else {
+      Navigator.of(context).pushReplacementNamed('/home');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Mostra um loading enquanto verifica
+    return const Scaffold(
+      body: Center(
+        child: CircularProgressIndicator(),
+      ),
     );
   }
 }

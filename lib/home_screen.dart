@@ -305,13 +305,15 @@ class HomeScreen extends StatelessWidget {
               ),
             ),
             // Rodapé fixo
-            Padding(
-              padding: const EdgeInsets.only(top: 16.0, bottom: 8.0),
-              child: Text(
-                'Versão 1.0.0',
-                style: TextStyle(
-                  color: isDarkMode ? Colors.grey[500] : const Color.fromARGB(255, 3, 104, 197),
-                  fontSize: 12,
+            SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.only(top: 16.0, bottom: 8.0),
+                child: Text(
+                  'Versão 1.0.0',
+                  style: TextStyle(
+                    color: isDarkMode ? Colors.grey[500] : const Color.fromARGB(255, 3, 104, 197),
+                    fontSize: 12,
+                  ),
                 ),
               ),
             ),
