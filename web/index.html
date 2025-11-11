@@ -1,39 +1,184 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <!--
-    If you are serving your web app in a path other than the root, change the
-    href value below to reflect the base path you are serving from.
-
-    The path provided below has to start and end with a slash "/" in order for
-    it to work correctly.
-
-    For more details:
-    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
-
-    This is a placeholder for base href that will be replaced by the value of
-    the `--base-href` argument provided to `flutter build`.
-  -->
-  <base href="$FLUTTER_BASE_HREF">
-
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
-  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Mosaico – Portuguese Tile Puzzle Game!</title>
+  <!-- SEO meta tags -->
+  <meta name="description" content="Mosaico - Portuguese tile puzzle game! Solve beautiful azulejo puzzles, discover Portuguese culture, compete for best times, and climb the global ranking." data-i18n-seo="description">
+  <meta name="keywords" content="Mosaico, Portuguese tiles, azulejos, puzzle game, Portuguese culture, brain training, Android game, tile puzzle, azulejos portugueses" data-i18n-seo="keywords">
+  <meta property="og:title" content="Mosaico – Portuguese Tile Puzzle Game!" data-i18n-seo="og:title">
+  <meta property="og:description" content="Mosaico - Portuguese tile puzzle game! Solve beautiful azulejo puzzles, discover Portuguese culture, compete for best times, and climb the global ranking." data-i18n-seo="og:description">
+  <meta property="og:image" content="logo.png">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://yourdomain.com/">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Mosaico – Portuguese Tile Puzzle Game!" data-i18n-seo="twitter:title">
+  <meta name="twitter:description" content="Mosaico - Portuguese tile puzzle game! Solve beautiful azulejo puzzles, discover Portuguese culture, compete for best times, and climb the global ranking." data-i18n-seo="twitter:description">
+  <meta name="twitter:image" content="logo.png">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="icon" type="image/png" href="logo.png">
+  <!-- Material Web CDN -->
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <!-- 
+    ⚠️ Atenção: 'importmap' não é suportado no Safari iOS < 16.4.
+    Usuários desses navegadores não terão suporte a módulos ES com importmap.
+    Considere usar um bundler (ex: Rollup, Vite, Webpack) para produção se precisar de compatibilidade ampla.
 
-  <!-- iOS meta tags & icons -->
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="mosaico">
-  <link rel="apple-touch-icon" href="icons/Icon-192.png">
-
-  <!-- Favicon -->
-  <link rel="icon" type="image/png" href="favicon.png"/>
-
-  <title>mosaico</title>
-  <link rel="manifest" href="manifest.json">
+    O importmap está sendo usado aqui para importar o Material 3 Web Components (@material/web) via módulos ES.
+    Sem o importmap, não é possível usar @material/web diretamente no navegador sem um bundler.
+  -->
+  <script type="importmap">
+    {
+      "imports": {
+        "@material/web/": "https://esm.run/@material/web/"
+      }
+    }
+  </script>
+  <script type="module">
+    import '@material/web/all.js';
+    import {styles as typescaleStyles} from '@material/web/typography/md-typescale-styles.js';
+    document.adoptedStyleSheets.push(typescaleStyles.styleSheet);
+  </script>
+  <!-- Material Symbols Outlined for dark_mode and light_mode -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" />
+  <style>
+    /* ...existing code... */
+    ul {
+      list-style: none;
+      padding-left: 0;
+    }
+    .features ul li {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.5em;
+    }
+    .features ul li .material-symbols-outlined {
+      margin-right: 0.25em;
+      font-size: 1.8em;
+      min-width: 1.2em;
+      margin-top: 10px;
+    }
+    /* ...existing code... */
+  </style>
 </head>
 <body>
-  <script src="flutter_bootstrap.js" async></script>
+  <header>
+    <div class="header-inner">
+      <div class="header-logo">
+        <img src="logo.png" alt="Mosaico Logo" class="logo">
+      </div>
+      <div class="header-content">
+        <h1 data-i18n="title">Mosaico</h1>
+        <section class="cta">
+          <a href="#download" class="download-btn" data-i18n="download_btn">
+            Download now for Android &nbsp;
+            <span class="material-symbols-outlined" style="vertical-align: middle; font-size: 30px;">android</span>
+          </a>
+        </section>
+        <p class="subtitle" data-i18n="subtitle">Portuguese Tile Puzzle Game!</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <div class="lang-menu-container">
+        <button id="toggle-lang" aria-label="Toggle language">EN</button>
+        <div id="lang-menu" class="lang-menu" style="display:none;">
+          <button class="lang-option" data-lang="EN">EN</button>
+          <button class="lang-option" data-lang="PT">PT</button>
+        </div>
+      </div>
+      <span id="toggle-theme" class="material-symbols-outlined" aria-label="Toggle dark/light mode" tabindex="0">dark_mode</span>
+    </div>
+  </header>
+  <main>
+    <!-- HERO BANNER CAROUSEL -->
+    <section class="hero-carousel">
+      <div class="carousel-container">
+        <div class="carousel-slide active">
+          <img src="assets/hero1.png" alt="Mosaico Game Screenshot 1">
+        </div>
+        <div class="carousel-slide">
+          <img src="assets/hero2.png" alt="Mosaico Game Screenshot 2">
+        </div>
+        <div class="carousel-slide">
+          <img src="assets/hero3.png" alt="Mosaico Game Screenshot 3">
+        </div>
+        <!-- Add more slides as needed -->
+        <button class="carousel-btn prev" aria-label="Previous">&#10094;</button>
+        <button class="carousel-btn next" aria-label="Next">&#10095;</button>
+        <div class="carousel-dots">
+          <span class="dot active"></span>
+          <span class="dot"></span>
+          <span class="dot"></span>
+        </div>
+      </div>
+    </section>
+    <section class="intro">
+      <p data-i18n="intro">
+        Challenge your mind with <b>Mosaico</b>, a unique puzzle game featuring beautiful Portuguese azulejos (traditional tiles)! Arrange colorful tile pieces to recreate stunning Portuguese ceramic art. Perfect for puzzle lovers and Portuguese culture enthusiasts of all ages.
+      </p>
+    </section>
+
+    <section class="features">
+      <h2 data-i18n="main_features">Main features:</h2>
+      <ul>
+        <li>
+          <span class="material-symbols-outlined">extension</span>
+          <span data-i18n="feature_puzzles"><b>Portuguese Tile Collections:</b> Discover beautiful puzzles featuring traditional Portuguese azulejos (tiles) with different difficulty levels from 4x4 to 5x5 grids.</span>
+        </li>
+        <li>
+          <span class="material-symbols-outlined">timer</span>
+          <span data-i18n="feature_timing"><b>Time Challenge:</b> Test your speed and compete for the best completion times. Each puzzle tracks your performance!</span>
+        </li>
+        <li>
+          <span class="material-symbols-outlined">emoji_events</span>
+          <span data-i18n="feature_ranking"><b>Global Ranking:</b> Compete with players worldwide! See where you stand on the leaderboard and challenge yourself to reach the top.</span>
+        </li>
+        <li>
+          <span class="material-symbols-outlined">account_circle</span>
+          <span data-i18n="feature_auth"><b>Google Sign-In:</b> Save your progress, sync across devices, and track your achievements with Google authentication.</span>
+        </li>
+        <li>
+          <span class="material-symbols-outlined">contrast</span>
+          <span data-i18n="feature_theme"><b>Dark and Light Mode:</b> Choose the theme that best suits your style or let the app follow your system theme.</span>
+        </li>
+        <li>
+          <span class="material-symbols-outlined">translate</span>
+          <span data-i18n="feature_multilingual"><b>Multilingual Support:</b> Available in Portuguese and English, with easy language switching.</span>
+        </li>
+        <li>
+          <span class="material-symbols-outlined">volume_up</span>
+          <span data-i18n="feature_sound"><b>Sound Effects:</b> Enjoy satisfying sound feedback as you place each tile piece, or play in silent mode.</span>
+        </li>
+        <li>
+          <span class="material-symbols-outlined">celebration</span>
+          <span data-i18n="feature_celebration"><b>Victory Celebrations:</b> Complete a puzzle and enjoy beautiful firework animations celebrating your achievement!</span>
+        </li>
+      </ul>
+    </section>
+    
+    <section class="cta" id="download">
+      <h2 class="cta-h2" data-i18n="cta_title">
+        Perfect for puzzle enthusiasts, Portuguese culture lovers, and relaxation!
+      </h2>
+      <a href="#" class="download-btn" data-i18n="download_btn">
+            Download now for Android &nbsp;
+            <span class="material-symbols-outlined" style="vertical-align: middle; font-size: 30px;">android</span>
+      </a>
+      <h3 class="footer-note" data-i18n="cta_footer">
+        Discover Portuguese azulejos, challenge yourself, and have fun with Mosaico!
+      </h3>
+      <h2 class="soon" data-i18n="soon_ios">Soon for iOS</h2>
+    </section>
+  </main>
+  <footer>
+    <p>&#169; 2025 Mosaico. All rights reserved.</p>
+    <div class="footer-links">
+      <a href="privacy-policy.html">Privacy Policy</a> | 
+      <a href="delete-account.html">Delete Account</a>
+    </div>
+  </footer>
+  <script src="script.js"></script>
 </body>
+</html>
 </html>
