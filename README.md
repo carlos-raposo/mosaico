@@ -183,6 +183,38 @@ Contribuições são bem-vindas! Sinta-se à vontade para:
 
 Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
 
+## 🌟 Como Tornar o Repositório Público
+
+Para tornar este repositório público no GitHub:
+
+1. **Acesse as configurações do repositório**
+   - Vá para https://github.com/carlos-raposo/mosaico
+   - Clique em **Settings** (Configurações)
+
+2. **Role até a seção "Danger Zone"**
+   - No final da página de configurações
+   - Procure por "Change repository visibility"
+
+3. **Clique em "Change visibility"**
+   - Selecione **"Make public"**
+   - Confirme digitando o nome do repositório quando solicitado
+
+### ⚠️ Antes de Tornar Público
+
+✅ **Checklist de Segurança:**
+
+- [x] Remover qualquer informação sensível (senhas, tokens privados)
+- [x] Verificar que não há chaves de API privadas commitadas
+- [x] Confirmar que as Firestore Security Rules estão configuradas corretamente
+- [x] Adicionar LICENSE (MIT - já incluído ✓)
+- [x] Melhorar README.md (já feito ✓)
+- [x] Adicionar CONTRIBUTING.md (já incluído ✓)
+- [x] Documentar configuração do Firebase
+
+### 📌 Nota Importante
+
+Os arquivos `google-services.json` e outras configurações do Firebase neste repositório contêm **chaves client-side** que são seguras para serem públicas. A segurança do projeto é garantida pelas **Firestore Security Rules**. Para mais informações, consulte [SECURITY.md](SECURITY.md).
+
 ## 👨‍💻 Autor
 
 **Carlos Raposo**
