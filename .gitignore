@@ -41,3 +41,25 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Firebase
+# Note: google-services.json and GoogleService-Info.plist contain client-side
+# API keys which are safe to commit. Security is handled by Firestore rules.
+# However, if you want to use your own Firebase project, you can uncomment:
+# android/app/google-services.json
+# ios/Runner/GoogleService-Info.plist
+
+# Environment files (if you add any in the future)
+.env
+.env.local
+.env.*.local
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Temporary files
+*.tmp
+*.temp
+/tmp/
