@@ -30,6 +30,14 @@
           }
         },
         {
+          "client_id": "517915885966-lkt398g46d4u8d8fu1170rl96tqgachb.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.uniteddreamsstates.muzaiko",
+            "certificate_hash": "c33f01999f25bc2f9c96f55d69746dbbee19dd36"
+          }
+        },
+        {
           "client_id": "517915885966-rn81oglqdqnakrs7isvp0d1tr6h8tfvn.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {

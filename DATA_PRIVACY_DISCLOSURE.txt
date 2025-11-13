@@ -1,0 +1,222 @@
+================================================================================
+GOOGLE PLAY - DECLARAÇÃO DE COLETA E COMPARTILHAMENTO DE DADOS
+Aplicativo: Mosaico - Puzzle de Azulejos Portugueses
+Data: 11 de novembro de 2025
+================================================================================
+
+RESPOSTA À QUESTÃO PRINCIPAL:
+============================
+"Does your app collect or share any of the required user data types?"
+
+RESPOSTA: SIM - O aplicativo coleta e compartilha tipos de dados de usuário.
+
+
+TIPOS DE DADOS QUE DEVEM SER DECLARADOS:
+========================================
+
+1. INFORMAÇÕES PESSOAIS (Personal Information)
+   --------------------------------------------
+   ✓ Endereços de email
+     - Coletado via Firebase Auth para autenticação com email/senha
+     - Coletado via Google Sign-In
+     - Coletado via Apple Sign-In (apenas iOS)
+   
+   ✓ Nome de usuário
+     - Nome de usuário personalizado (5-9 caracteres)
+     - Obrigatório durante o registro
+     - Usado para identificação no ranking global
+
+
+2. ATIVIDADE DO APLICATIVO (App Activity)
+   ----------------------------------------
+   ✓ Progresso do jogo
+     - Puzzles desbloqueados (armazenados no Firestore)
+     - Sistema de progressão: desbloqueia próximo puzzle ao completar atual
+   
+   ✓ Tempos de conclusão
+     - Melhores tempos pessoais para cada puzzle
+     - Armazenados localmente (SharedPreferences) e sincronizados com Firestore
+   
+   ✓ Pontuações/Rankings
+     - Rankings globais por puzzle (coleção 'rankings' no Firestore)
+     - Top 10 melhores tempos por puzzle
+     - Informações do ranking: userId, tempo, data da última atualização
+
+
+3. INFORMAÇÕES DO APP E DESEMPENHO (App Info and Performance)
+   ------------------------------------------------------------
+   ✓ Logs de crashes e diagnósticos
+     - Coletados automaticamente pelo Firebase SDK
+     - Apenas se Firebase Analytics estiver habilitado
+
+
+COMO OS DADOS SÃO USADOS:
+=========================
+
+COLETADOS PELO DESENVOLVEDOR:
+-----------------------------
+- Autenticação de usuário (email, nome de usuário)
+- Rastreamento de progressão do jogo
+- Funcionalidade de ranking/placar global
+- Rastreamento de melhores tempos pessoais
+- Sincronização entre dispositivos (se autenticado)
+
+
+COMPARTILHADOS COM TERCEIROS:
+-----------------------------
+✓ Google (Firebase)
+  - Todos os dados do usuário são armazenados no Firebase Firestore
+  - Projeto Firebase: mosaico-3b5af
+  - Coleções: 'users', 'rankings'
+
+✓ Google Sign-In
+  - Para autenticação (email, informações de perfil)
+  - SDK: com.google.android.gms:play-services-auth
+
+✓ Apple Sign-In
+  - Para autenticação no iOS (email, nome)
+  - SDK: sign_in_with_apple
+
+
+DETALHES IMPORTANTES:
+=====================
+
+LOCALIZAÇÃO DOS DADOS:
+- ✓ Dados coletados FORA do dispositivo - Sincronização com Firebase Firestore
+- ✓ Dados compartilhados com terceiros - Firebase (Google), Google Sign-In, Apple Sign-In
+- ✓ Dados vinculados à identidade do usuário - Associados ao Firebase Auth UID
+
+AUTENTICAÇÃO OPCIONAL:
+- Usuários PODEM jogar sem fazer login
+- Dados ficam armazenados APENAS localmente (SharedPreferences) quando offline
+- Recursos de ranking global REQUEREM autenticação
+- Aviso exibido ao usuário: "Se entrar sem autentificação não poderá registar 
+  nem ver os melhores tempos no ranking global"
+
+
+DADOS ARMAZENADOS LOCALMENTE (Offline):
+========================================
+Quando NÃO autenticado:
+- Puzzles desbloqueados (SharedPreferences - chave: 'unlockedPuzzles')
+- Melhores tempos (SharedPreferences - chave: 'bestTimes')
+- Configurações (tema escuro/claro, idioma, som)
+
+Quando AUTENTICADO:
+- Dados sincronizados automaticamente com Firestore
+- Chaves específicas por usuário (ex: 'bestTimes_{userId}')
+- Migração automática de dados offline para conta autenticada
+
+
+ESTRUTURA DE DADOS NO FIRESTORE:
+=================================
+
+Coleção 'users':
+----------------
+{
+  "userId": "...",
+  "username": "...",          // 5-9 caracteres
+  "email": "...",
+  "unlockedPuzzles": [1, 2, 3, ...],
+  "bestTimes": {
+    "Puzzle 1": 45,           // tempo em segundos
+    "Puzzle 2": 67,
+    ...
+  }
+}
+
+Coleção 'rankings':
+-------------------
+{
+  "puzzleId": "Puzzle 1",
+  "puzzleName": "Puzzle 1",
+  "topTimes": [
+    {
+      "userId": "...",
+      "time": 45,               // tempo em segundos
+      "lastUpdated": Timestamp
+    },
+    ...                         // máximo 10 entradas
+  ]
+}
+
+
+SELEÇÕES RECOMENDADAS NO FORMULÁRIO:
+====================================
+
+☑ Personal information
+  ☑ Email address
+  ☑ Name (Username)
+
+☑ App activity
+  ☑ Game progress
+  ☑ Other user-generated content (completion times, scores)
+
+☑ App info and performance
+  ☑ Crash logs
+  ☑ Diagnostics
+
+□ Location (NÃO coletado)
+□ Financial info (NÃO coletado)
+□ Health and fitness (NÃO coletado)
+□ Messages (NÃO coletado)
+□ Photos and videos (NÃO coletado)
+□ Audio files (NÃO coletado)
+□ Files and docs (NÃO coletado)
+□ Calendar (NÃO coletado)
+□ Contacts (NÃO coletado)
+
+
+POLÍTICA DE PRIVACIDADE:
+========================
+URL: https://carlos-raposo.github.io/mosaico/privacy-policy.html
+(Ou: https://carlos-raposo.github.io/mosaico/web/privacy-policy.html)
+
+IMPORTANTE: Certifique-se de que a política de privacidade reflete TODAS 
+as práticas de coleta de dados descritas acima!
+
+
+NOTAS ADICIONAIS:
+=================
+
+1. SEGURANÇA DOS DADOS:
+   - Autenticação via Firebase Auth (segurança gerenciada pelo Google)
+   - Comunicação criptografada (HTTPS)
+   - Regras de segurança do Firestore devem estar configuradas
+
+2. RETENÇÃO DE DADOS:
+   - Dados mantidos enquanto a conta existir
+   - Usuário pode excluir conta via: web/delete-account.html
+   - Exclusão de conta remove todos os dados do Firestore
+
+3. CONFORMIDADE:
+   - GDPR: Usuários podem solicitar exclusão de dados
+   - Transparência: Política de privacidade disponível antes do download
+   - Consentimento: Usuário aceita termos ao criar conta
+
+4. DADOS NÃO COLETADOS:
+   - Localização geográfica
+   - Contatos
+   - Informações financeiras/pagamento
+   - Fotos ou vídeos
+   - Mensagens ou comunicações
+   - Calendário
+   - Arquivos do dispositivo
+
+
+PRÓXIMOS PASSOS:
+================
+1. Preencher questionário do Google Play Console com informações acima
+2. Verificar se política de privacidade está acessível e atualizada
+3. Confirmar que Firebase Rules protegem adequadamente os dados
+4. Testar fluxo de exclusão de conta (delete-account.html)
+5. Submeter app para revisão
+
+
+CONTATO DO DESENVOLVEDOR:
+=========================
+Email: mail.carlosraposo@gmail.com
+
+
+================================================================================
+FIM DO DOCUMENTO
+================================================================================

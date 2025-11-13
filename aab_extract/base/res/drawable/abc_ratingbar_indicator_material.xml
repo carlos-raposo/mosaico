@@ -1,0 +1,22 @@
+
+…
+;
+android*http://schemas.android.com/apk/res/androidH
+layer-list*•
+Œitem"
+*http://schemas.android.com/apk/res/androiddrawable @drawable/abc_ic_star_black_36dp"(™ƒ„2+
+)¢€ ødrawable/abc_ic_star_black_36dp0"s
+*http://schemas.android.com/apk/res/androidid@android:id/background"(Ğ„2 
+€€ˆandroid:id/background0>*®
+¥item"˜
+*http://schemas.android.com/apk/res/androiddrawable%@drawable/abc_ic_star_half_black_36dp"(™ƒ„20
+.¥€ ø$drawable/abc_ic_star_half_black_36dp0"
+*http://schemas.android.com/apk/res/androidid@android:id/secondaryProgress"(Ğ„2'
+%€ˆandroid:id/secondaryProgress0C*ğ
+çitem"o
+*http://schemas.android.com/apk/res/androidid@android:id/progress"(Ğ„2
+€ˆandroid:id/progress0*í
+äbitmap"‰
+*http://schemas.android.com/apk/res/androidsrc @drawable/abc_ic_star_black_36dp"(™‚„2+
+)¢€ ødrawable/abc_ic_star_black_36dp0"N
+*http://schemas.android.com/apk/res/android	tileModeXrepeat"(÷ˆ„2:0)-H

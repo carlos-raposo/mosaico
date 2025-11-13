@@ -180,7 +180,7 @@ class HomeScreen extends StatelessWidget {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: buttonBgColor,
                           foregroundColor: buttonTextColor,
-                          minimumSize: const Size(double.infinity, 40),
+                          minimumSize: const Size(double.infinity, 52),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                           side: BorderSide(
                             color: buttonBorderColor,
@@ -219,7 +219,7 @@ class HomeScreen extends StatelessWidget {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: isDarkMode ? AppColors.buttonBgBlue : AppColors.buttonBgWhite,
                       foregroundColor: isDarkMode ? Colors.black : Colors.black,
-                      minimumSize: const Size(double.infinity, 40),
+                      minimumSize: const Size(double.infinity, 52),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                      side: BorderSide(
                         color: isDarkMode ? AppColors.buttonBorderDark : AppColors.buttonBorderLight,
@@ -297,7 +297,7 @@ class HomeScreen extends StatelessWidget {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: isDarkMode ?AppColors.buttonBgBlue : AppColors.buttonBgWhite,
                       foregroundColor: isDarkMode ? Colors.black : Colors.black,
-                      minimumSize: const Size(double.infinity, 40),
+                      minimumSize: const Size(double.infinity, 52),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                       side: BorderSide(
                         color: isDarkMode ? AppColors.buttonBorderDark : AppColors.buttonBorderLight,
