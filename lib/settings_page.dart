@@ -4,14 +4,13 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'settings_controller.dart';
 import 'progress_service.dart';
 import 'best_times_service.dart';
 import 'ranking_screen.dart';
-import 'collection_selection_screen.dart';
-import 'game_screen.dart';
-import 'package:confetti/confetti.dart';
-import 'dart:math';
+import 'package:flutter/services.dart';
+import 'demo_collections.dart';
 
 class SettingsPage extends StatefulWidget {
   final bool isDarkMode;
@@ -25,7 +24,7 @@ class SettingsPage extends StatefulWidget {
   final bool isAuthenticated;
 
   const SettingsPage({
-    Key? key,
+    super.key,
     required this.isDarkMode,
     required this.soundEnabled,
     required this.locale,
@@ -35,7 +34,7 @@ class SettingsPage extends StatefulWidget {
     required this.onLogout,
     this.onDeleteAccount,
     required this.isAuthenticated,
-  }) : super(key: key);
+  });
 
   @override
   State<SettingsPage> createState() => _SettingsPageState();
@@ -159,18 +158,18 @@ class _SettingsPageState extends State<SettingsPage> {
               padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 4.0),
               child: Text(
                 _currentLocale.languageCode == 'pt' ? 'Menu' : 'Menu',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: iconColor),
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: iconColor),
               ),
             ),
             ListTile(
-              leading: Icon(Icons.home, color: iconColor),
+              leading: Icon(Icons.home, color: iconColor, size: 30.0),
               title: Text(_homeLabel, style: TextStyle(color: textColor)),
               onTap: () {
                 Navigator.of(context).pushNamedAndRemoveUntil('/home', (route) => false);
               },
             ),
             ListTile(
-              leading: Icon(Icons.play_arrow, color: iconColor),
+              leading: Icon(Icons.play_arrow, color: iconColor, size: 30.0),
               title: Text(_playLabel, style: TextStyle(color: textColor)),
               onTap: () {
                 Navigator.of(context).push(
@@ -181,7 +180,7 @@ class _SettingsPageState extends State<SettingsPage> {
               },
             ),
             ListTile(
-              leading: Icon(Icons.emoji_events, color: iconColor),
+              leading: Icon(Icons.emoji_events, color: iconColor, size: 30.0),
               title: Text(_rankingLabel, style: TextStyle(color: textColor)),
               onTap: () {
                 Navigator.of(context).push(
@@ -197,12 +196,12 @@ class _SettingsPageState extends State<SettingsPage> {
               padding: const EdgeInsets.fromLTRB(16.0, 8.0, 16.0, 4.0),
               child: Text(
                 _currentLocale.languageCode == 'pt' ? 'Conta' : 'Account',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: iconColor),
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: iconColor),
               ),
             ),
             if (isAuthenticated && email != null) ...[
               ListTile(
-                leading: Icon(Icons.email, color: iconColor),
+                leading: Icon(Icons.email, color: iconColor, size: 30.0),
                 title: Text(email, style: TextStyle(color: textColor)),
               ),
               Padding(
@@ -236,7 +235,7 @@ class _SettingsPageState extends State<SettingsPage> {
                           IconButton(
                             icon: _isSavingUsername
                                 ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                                : Icon(Icons.check, color: iconColor),
+                                : Icon(Icons.check, color: iconColor, size: 30.0),
                             tooltip: 'Salvar username',
                             onPressed: _isSavingUsername
                                 ? null
@@ -251,7 +250,7 @@ class _SettingsPageState extends State<SettingsPage> {
                           )
                         else
                           IconButton(
-                            icon: Icon(Icons.edit, color: iconColor),
+                            icon: Icon(Icons.edit, color: iconColor, size: 30.0),
                             tooltip: 'Editar username',
                             onPressed: _isLoadingUsername || _isSavingUsername
                                 ? null
@@ -282,7 +281,7 @@ class _SettingsPageState extends State<SettingsPage> {
               Divider(color: iconColor),
             ] else if (!isAuthenticated) ...[
               ListTile(
-                leading: Icon(Icons.person_off, color: iconColor),
+                leading: Icon(Icons.person_off, color: iconColor, size: 30.0),
                 title: Text(_notAuthenticatedLabel, style: TextStyle(color: textColor)),
               ),
               Divider(color: iconColor),
@@ -292,25 +291,25 @@ class _SettingsPageState extends State<SettingsPage> {
               padding: const EdgeInsets.fromLTRB(16.0, 8.0, 16.0, 4.0),
               child: Text(
                 _currentLocale.languageCode == 'pt' ? 'Configurações' : 'Settings',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: iconColor),
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: iconColor),
               ),
             ),
             ListTile(
-              leading: Icon(settings.soundEnabled ? Icons.volume_up : Icons.volume_off, color: iconColor),
+              leading: Icon(settings.soundEnabled ? Icons.volume_up : Icons.volume_off, color: iconColor, size: 30.0),
               title: Text(settings.soundEnabled ? _soundOnLabel : _soundOffLabel, style: TextStyle(color: textColor)),
               onTap: () async {
                 await settings.toggleSound();
               },
             ),
             ListTile(
-              leading: Icon(Icons.brightness_6, color: iconColor),
+              leading: Icon(Icons.brightness_6, color: iconColor, size: 30.0),
               title: Text(_themeLabel, style: TextStyle(color: textColor)),
               onTap: () async {
                 await settings.toggleTheme();
               },
             ),
             ListTile(
-              leading: Icon(Icons.language, color: iconColor),
+              leading: Icon(Icons.language, color: iconColor, size: 30.0),
               title: Row(
                 children: [
                   Text(_languageLabel, style: TextStyle(color: textColor)),
@@ -350,9 +349,9 @@ class _SettingsPageState extends State<SettingsPage> {
               ),
             ),
             ListTile(
-              leading: Icon(Icons.info_outline, color: iconColor),
+              leading: Icon(Icons.help_center_outlined, color: iconColor, size: 30.0),
               title: Text(
-                _currentLocale.languageCode == 'pt' ? 'Ver Tela de Boas-Vindas' : 'View Welcome Screen',
+                _currentLocale.languageCode == 'pt' ? 'Ver o Tutorial' : 'View Tutorial',
                 style: TextStyle(color: textColor),
               ),
               onTap: () async {
@@ -363,7 +362,7 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
             Divider(color: iconColor),
             ListTile(
-              leading: Icon(isAuthenticated ? Icons.logout : Icons.login, color: iconColor),
+              leading: Icon(isAuthenticated ? Icons.logout : Icons.login, color: iconColor, size: 30.0),
               title: Text(isAuthenticated ? _logoutLabel : _loginLabel, style: TextStyle(color: textColor)),
               onTap: () async {
                 if (isAuthenticated) {
@@ -398,7 +397,39 @@ class _SettingsPageState extends State<SettingsPage> {
               },
             ),
             ListTile(
-              leading: Icon(Icons.clear_all, color: iconColor),
+              leading: Icon(Icons.web, color: iconColor, size: 30.0),
+              title: Text(
+                _currentLocale.languageCode == 'pt' ? 'Ir para Website' : 'Go to Website',
+                style: TextStyle(color: textColor),
+              ),
+              onTap: () async {
+                final url = Uri.parse('https://carlosraposo.eu/');
+                if (await canLaunchUrl(url)) {
+                  await launchUrl(
+                    url,
+                    mode: LaunchMode.externalApplication,
+                  );
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        _currentLocale.languageCode == 'pt'
+                          ? 'Não foi possível abrir o link. Se necessário, acesse manualmente: https://carlos-raposo.github.io/mosaico/web/index.html'
+                          : 'Could not open the link. If needed, open manually: https://carlos-raposo.github.io/mosaico/web/index.html'
+                      ),
+                      action: SnackBarAction(
+                        label: _currentLocale.languageCode == 'pt' ? 'Copiar link' : 'Copy link',
+                        onPressed: () {
+                          Clipboard.setData(const ClipboardData(text: 'https://carlos-raposo.github.io/mosaico/web/index.html'));
+                        },
+                      ),
+                    ),
+                  );
+                }
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.clear_all, color: iconColor, size: 30.0),
               title: Text('Limpar Cache Local', style: TextStyle(color: textColor)),
               subtitle: Text('Remove dados temporários salvos no dispositivo', 
                            style: TextStyle(color: textColor.withOpacity(0.7))),
@@ -450,7 +481,7 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
             if (isAuthenticated && widget.onDeleteAccount != null)
               ListTile(
-                leading: Icon(Icons.delete, color: iconColor),
+                leading: Icon(Icons.delete, color: iconColor, size: 30.0),
                 title: Text(_deleteAccountLabel, style: TextStyle(color: textColor)),
                 onTap: widget.onDeleteAccount,
               ),
@@ -548,140 +579,6 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Widget _buildGameSelectionScreen() {
-    // Dados mockados para demonstração (copiado da home_screen.dart)
-    final collections = [
-      CollectionData(
-        name: 'Coleção 1',
-        imagePath: 'assets/images/col_1/puzzle1.png',
-        puzzles: [
-          // Puzzles originais da coleção 1
-          PuzzleData(
-            name: 'Puzzle 1',
-            imagePath: 'assets/images/col_1/puzzle1.png',
-            pieceFolder: 'assets/images/col_1/puzzle1/4x4/',
-            pieceCount: 16,
-          ),
-          PuzzleData(
-            name: 'Puzzle 2',
-            imagePath: 'assets/images/col_1/puzzle2.png',
-            pieceFolder: 'assets/images/col_1/puzzle2/4x4/',
-            pieceCount: 16,
-          ),
-          PuzzleData(
-            name: 'Puzzle 3',
-            imagePath: 'assets/images/col_1/puzzle3.png',
-            pieceFolder: 'assets/images/col_1/puzzle3/4x4/',
-            pieceCount: 16,
-          ),
-          PuzzleData(
-            name: 'Puzzle 4',
-            imagePath: 'assets/images/col_1/puzzle4.png',
-            pieceFolder: 'assets/images/col_1/puzzle4/4x4/',
-            pieceCount: 16,
-          ),
-          PuzzleData(
-            name: 'Puzzle 5',
-            imagePath: 'assets/images/col_1/puzzle5.png',
-            pieceFolder: 'assets/images/col_1/puzzle5/4x4/',
-            pieceCount: 16,
-          ),
-          PuzzleData(
-            name: 'Puzzle 6',
-            imagePath: 'assets/images/col_1/puzzle6.png',
-            pieceFolder: 'assets/images/col_1/puzzle6/4x4/',
-            pieceCount: 25,
-          ),
-          PuzzleData(
-            name: 'Puzzle 7',
-            imagePath: 'assets/images/col_1/puzzle7.png',
-            pieceFolder: 'assets/images/col_1/puzzle7/4x4/',
-            pieceCount: 16,
-          ),
-          PuzzleData(
-            name: 'Puzzle 8',
-            imagePath: 'assets/images/col_1/puzzle8.png',
-            pieceFolder: 'assets/images/col_1/puzzle8/4x4/',
-            pieceCount: 16,
-          ),
-          PuzzleData(
-            name: 'Puzzle 9',
-            imagePath: 'assets/images/col_1/puzzle9.png',
-            pieceFolder: 'assets/images/col_1/puzzle9/4x4/',
-            pieceCount: 16,
-          ),
-          PuzzleData(
-            name: 'Puzzle 10',
-            imagePath: 'assets/images/col_1/puzzle10.png',
-            pieceFolder: 'assets/images/col_1/puzzle10/4x4/',
-            pieceCount: 40,
-          ),
-        ],
-      ),
-    ];
-    
-    return CollectionSelectionScreen(
-      collections: collections,
-      onPuzzleSelected: (collection, puzzle) async {
-        // Função auxiliar para navegar para um puzzle
-        Future<Map<String, dynamic>?> navigateToGame(PuzzleData targetPuzzle) async {
-          String puzzlePath = targetPuzzle.pieceFolder;
-          if (puzzlePath.endsWith('/')) {
-            puzzlePath = puzzlePath.substring(0, puzzlePath.length - 1);
-          }
-          
-          // Calcular rows e cols a partir de pieceCount
-          int rows = 4;
-          int cols = 4;
-          if (targetPuzzle.pieceCount == 16) {
-            rows = 4;
-            cols = 4;
-          } else if (targetPuzzle.pieceCount == 15) {
-            rows = 5;
-            cols = 3;    
-          } else if (targetPuzzle.pieceCount == 24) {
-            rows = 6;
-            cols = 4;  
-          } else if (targetPuzzle.pieceCount == 25) {
-            rows = 5;
-            cols = 5;
-          } else if (targetPuzzle.pieceCount == 40) {
-            rows = 8;
-            cols = 5;
-          } else {
-            // fallback: tentar quadrado
-            rows = cols = (targetPuzzle.pieceCount > 0) ? sqrt(targetPuzzle.pieceCount).round() : 4;
-          }
-          
-          return await Navigator.of(context).push<Map<String, dynamic>>(
-            MaterialPageRoute(
-              builder: (context) => GameScreen(
-                title: targetPuzzle.name,
-                puzzlePath: puzzlePath,
-                rows: rows,
-                cols: cols,
-                confettiController: ConfettiController(duration: const Duration(seconds: 6)),
-                locale: Localizations.localeOf(context),
-                isAuthenticated: true,
-                isDarkMode: Theme.of(context).brightness == Brightness.dark,
-              ),
-            ),
-          );
-        }
-        
-        // Navega para o puzzle inicial
-        Map<String, dynamic>? result = await navigateToGame(puzzle);
-        
-        // Processa o resultado
-        while (result != null && result['action'] == 'nextPuzzle') {
-          final nextPuzzleNumber = result['puzzleNumber'] as int?;
-          if (nextPuzzleNumber != null && nextPuzzleNumber <= collection.puzzles.length) {
-            final nextPuzzle = collection.puzzles[nextPuzzleNumber - 1];
-            result = await navigateToGame(nextPuzzle);
-          } else {
-            break;
-          }
-        }
-      },
-    );
+    return buildDemoCollectionSelectionScreen(context);
   }
 }
