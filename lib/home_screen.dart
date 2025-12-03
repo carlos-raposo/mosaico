@@ -1,32 +1,19 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-
 import 'package:flutter/material.dart';
-import 'collection_selection_screen.dart';
-import 'game_screen.dart';
-
 import 'settings_page.dart';
-
-
-import 'package:confetti/confetti.dart';
-import 'dart:math';
 import 'package:flutter_svg/flutter_svg.dart';
-
-
 import 'package:firebase_auth/firebase_auth.dart';
 import 'style_guide.dart';
 import 'ranking_screen.dart';
+import 'settings_controller.dart';
+import 'package:provider/provider.dart';
+import 'demo_collections.dart';
 
 class HomeScreen extends StatelessWidget {
   final String userName;
   final int currentLevel;
   final int maxLevel;
   final int totalPoints;
-  final Function(Locale) setLanguage;
-  final Locale locale;
-  final Future<void> Function() toggleTheme;
-  final bool isDarkMode;
-  final bool soundEnabled;
-  final Future<void> Function() toggleSound;
 
   const HomeScreen({
     super.key,
@@ -34,21 +21,22 @@ class HomeScreen extends StatelessWidget {
     required this.currentLevel,
     required this.maxLevel,
     required this.totalPoints,
-    required this.setLanguage,
-    required this.locale,
-    required this.toggleTheme,
-    required this.isDarkMode,
-    required this.soundEnabled,
-    required this.toggleSound,
   });
 
   @override
   Widget build(BuildContext context) {
+    final settings = Provider.of<SettingsController>(context);
+    final isDarkMode = settings.isDarkMode;
+    final soundEnabled = settings.soundEnabled;
+    final locale = settings.locale;
+    final setLanguage = settings.setLanguage;
+    final toggleTheme = settings.toggleTheme;
+    final toggleSound = settings.toggleSound;
   // final screenHeight = MediaQuery.of(context).size.height;
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       // Usuário não autenticado, mostra Jogador
-      return _buildScaffold(context, 'Jogador');
+      return _buildScaffold(context, 'Jogador', isDarkMode, soundEnabled, locale, setLanguage, toggleTheme, toggleSound);
     }
     return FutureBuilder<DocumentSnapshot>(
       future: FirebaseFirestore.instance.collection('users').doc(user.uid).get(),
@@ -60,12 +48,12 @@ class HomeScreen extends StatelessWidget {
             username = data['username'];
           }
         }
-        return _buildScaffold(context, username);
+        return _buildScaffold(context, username, isDarkMode, soundEnabled, locale, setLanguage, toggleTheme, toggleSound);
       },
     );
   }
 
-  Widget _buildScaffold(BuildContext context, String username) {
+  Widget _buildScaffold(BuildContext context, String username, bool isDarkMode, bool soundEnabled, Locale locale, Function(Locale) setLanguage, Future<void> Function() toggleTheme, Future<void> Function() toggleSound) {
     // ...existing code...
     return Scaffold(
       backgroundColor: isDarkMode ? Colors.black : const Color.fromARGB(255, 247, 250, 255),
@@ -169,51 +157,7 @@ class HomeScreen extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Builder(   // Authentication Button
-                    builder: (context) {
-                      final isAuthenticated = FirebaseAuth.instance.currentUser != null;
-                      final buttonTextColor = isDarkMode ? AppColors.darkText : AppColors.lightText;
-                      final buttonIconColor = isDarkMode ? AppColors.darkText : AppColors.lightText;
-                      final buttonBorderColor = isDarkMode ? AppColors.buttonBorderDark : AppColors.buttonBorderLight;
-                      final buttonBgColor = isDarkMode ? AppColors.buttonBgBlue : AppColors.buttonBgWhite;
-                      return ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: buttonBgColor,
-                          foregroundColor: buttonTextColor,
-                          minimumSize: const Size(double.infinity, 52),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                          side: BorderSide(
-                            color: buttonBorderColor,
-                            width: 2,
-                          ),
-                        ),
-                        icon: Icon(
-                          isAuthenticated ? Icons.logout : Icons.login,
-                          color: buttonIconColor,
-                          size: 24,
-                        ),
-                        label: Text(
-                          isAuthenticated
-                            ? (Localizations.localeOf(context).languageCode == 'pt' ? 'Logout' : 'Logout')
-                            : (Localizations.localeOf(context).languageCode == 'pt' ? 'Entrar / Criar Conta' : 'Login / Create Account'),
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: buttonTextColor,
-                            fontWeight: FontWeight.w500,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                        onPressed: () async {
-                          if (isAuthenticated) {
-                            await FirebaseAuth.instance.signOut();
-                            Navigator.of(context).pushNamedAndRemoveUntil('/auth', (route) => false);
-                          } else {
-                            Navigator.of(context).pushNamed('/auth');
-                          }
-                        },
-                      );
-                    },
-                  ),
+                  // ... Botão de autenticação removido. Gerenciamento de conta apenas via SettingsPage ...
                   const SizedBox(height: 8),
                   ElevatedButton.icon(   /// PLAY button
                     style: ElevatedButton.styleFrom(
@@ -242,14 +186,13 @@ class HomeScreen extends StatelessWidget {
                         letterSpacing: 1.0,
                       ),
                     ),
-                    onPressed: () async {
+                    onPressed: () {
                       final isAuthenticated = FirebaseAuth.instance.currentUser != null;
-                      
                       if (!isAuthenticated) {
                         // Mostra aviso se não estiver autenticado
                         showDialog(
                           context: context,
-                          builder: (context) {
+                          builder: (dialogContext) {
                             return AlertDialog(
                               title: Text(Localizations.localeOf(context).languageCode == 'pt' ? 'Aviso' : 'Warning'),
                               content: Text(Localizations.localeOf(context).languageCode == 'pt'
@@ -258,16 +201,15 @@ class HomeScreen extends StatelessWidget {
                               actions: [
                                 TextButton(
                                   onPressed: () {
-                                    Navigator.of(context).pop();
+                                    Navigator.of(dialogContext).pop();
                                     Navigator.of(context).pushNamed('/auth');
                                   },
                                   child: Text(Localizations.localeOf(context).languageCode == 'pt' ? 'Autentificar' : 'Authenticate'),
                                 ),
                                 TextButton(
-                                  onPressed: () async {
-                                    Navigator.of(context).pop();
-                                    await Future.delayed(Duration.zero);
-                                    if (!context.mounted) return;
+                                  onPressed: () {
+                                    Navigator.of(dialogContext).pop();
+                                    // Navega para seleção fake sem async gap
                                     Navigator.of(context).push(
                                       MaterialPageRoute(
                                         builder: (context) => _FakeCollectionSelectionRoute(soundEnabled: soundEnabled),
@@ -282,8 +224,6 @@ class HomeScreen extends StatelessWidget {
                         );
                       } else {
                         // Se autenticado, vai direto para o jogo
-                        await Future.delayed(Duration.zero);
-                        if (!context.mounted) return;
                         Navigator.of(context).push(
                           MaterialPageRoute(
                             builder: (context) => _FakeCollectionSelectionRoute(soundEnabled: soundEnabled),
@@ -292,7 +232,7 @@ class HomeScreen extends StatelessWidget {
                       }
                     },
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 24),
                   ElevatedButton.icon(   /// Ranking Button
                     style: ElevatedButton.styleFrom(
                       backgroundColor: isDarkMode ?AppColors.buttonBgBlue : AppColors.buttonBgWhite,
@@ -369,143 +309,6 @@ class _FakeCollectionSelectionRoute extends StatelessWidget {
   const _FakeCollectionSelectionRoute({required this.soundEnabled});
   @override
   Widget build(BuildContext context) {
-    // Dados mockados para demonstração
-    final collections = [
-      CollectionData(
-        name: 'Coleção 1',
-        imagePath: 'assets/images/col_1/puzzle1.png',
-        puzzles: [
-          // Puzzles originais da coleção 1
-          PuzzleData(
-            name: 'Puzzle 1',
-            imagePath: 'assets/images/col_1/puzzle1.png',
-            pieceFolder: 'assets/images/col_1/puzzle1/4x4/',
-            pieceCount: 16,
-          ),
-          PuzzleData(
-            name: 'Puzzle 2',
-            imagePath: 'assets/images/col_1/puzzle2.png',
-            pieceFolder: 'assets/images/col_1/puzzle2/4x4/',
-            pieceCount: 16,
-          ),
-          PuzzleData(
-            name: 'Puzzle 3',
-            imagePath: 'assets/images/col_1/puzzle3.png',
-            pieceFolder: 'assets/images/col_1/puzzle3/4x4/',
-            pieceCount: 16,
-          ),
-          PuzzleData(
-            name: 'Puzzle 4',
-            imagePath: 'assets/images/col_1/puzzle4.png',
-            pieceFolder: 'assets/images/col_1/puzzle4/4x4/',
-            pieceCount: 16,
-          ),
-          PuzzleData(
-            name: 'Puzzle 5',
-            imagePath: 'assets/images/col_1/puzzle5.png',
-            pieceFolder: 'assets/images/col_1/puzzle5/4x4/',
-            pieceCount: 16,
-          ),
-          PuzzleData(
-            name: 'Puzzle 6',
-            imagePath: 'assets/images/col_1/puzzle6.png',
-            pieceFolder: 'assets/images/col_1/puzzle6/4x4/',
-            pieceCount: 16,
-          ),
-          PuzzleData(
-            name: 'Puzzle 7',
-            imagePath: 'assets/images/col_1/puzzle7.png',
-            pieceFolder: 'assets/images/col_1/puzzle7/4x4/',
-            pieceCount: 16,
-          ),
-          PuzzleData(
-            name: 'Puzzle 8',
-            imagePath: 'assets/images/col_1/puzzle8.png',
-            pieceFolder: 'assets/images/col_1/puzzle8/4x4/',
-            pieceCount: 16,
-          ),
-          PuzzleData(
-            name: 'Puzzle 9',
-            imagePath: 'assets/images/col_1/puzzle9.png',
-            pieceFolder: 'assets/images/col_1/puzzle9/5x5/',
-            pieceCount: 25,
-          ),
-          PuzzleData(
-            name: 'Puzzle 10',
-            imagePath: 'assets/images/col_1/puzzle10.png',
-            pieceFolder: 'assets/images/col_1/puzzle10/4x4/',
-            pieceCount: 16,
-          ),
-        ],
-      ),
-    ];
-    return CollectionSelectionScreen(
-      collections: collections,
-      onPuzzleSelected: (collection, puzzle) async {
-        // Função auxiliar para navegar para um puzzle
-        Future<Map<String, dynamic>?> navigateToGame(PuzzleData targetPuzzle) async {
-          String puzzlePath = targetPuzzle.pieceFolder;
-          if (puzzlePath.endsWith('/')) {
-            puzzlePath = puzzlePath.substring(0, puzzlePath.length - 1);
-          }
-          
-          // Calcular rows e cols a partir de pieceCount
-          int rows = 4;
-          int cols = 4;
-          if (targetPuzzle.pieceCount == 16) {
-            rows = 4;
-            cols = 4;
-          } else if (targetPuzzle.pieceCount == 15) {
-            rows = 5;
-            cols = 3;    
-          } else if (targetPuzzle.pieceCount == 24) {
-            rows = 6;
-            cols = 4;  
-          } else if (targetPuzzle.pieceCount == 25) {
-            rows = 5;
-            cols = 5;
-          } else if (targetPuzzle.pieceCount == 40) {
-            rows = 8;
-            cols = 5;
-          } else {
-            // fallback: tentar quadrado
-            rows = cols = (targetPuzzle.pieceCount > 0) ? sqrt(targetPuzzle.pieceCount).round() : 4;
-          }
-          
-          return await Navigator.of(context).push<Map<String, dynamic>>(
-            MaterialPageRoute(
-              builder: (context) => GameScreen(
-                title: targetPuzzle.name,
-                puzzlePath: puzzlePath,
-                rows: rows,
-                cols: cols,
-                confettiController: ConfettiController(duration: const Duration(seconds: 6)),
-                locale: Localizations.localeOf(context),
-                isAuthenticated: true,
-                isDarkMode: Theme.of(context).brightness == Brightness.dark,
-              ),
-            ),
-          );
-        }
-        
-        // Navega para o puzzle inicial
-        Map<String, dynamic>? result = await navigateToGame(puzzle);
-        
-        // Processa o resultado
-        while (result != null && result['action'] == 'nextPuzzle') {
-          final nextPuzzleNumber = result['puzzleNumber'] as int?;
-          if (nextPuzzleNumber != null && nextPuzzleNumber <= collection.puzzles.length) {
-            final nextPuzzle = collection.puzzles[nextPuzzleNumber - 1];
-            result = await navigateToGame(nextPuzzle);
-          } else {
-            break;
-          }
-        }
-        
-        // Se saiu com ação 'back' ou 'allPuzzles' ou qualquer mudança de puzzles, 
-        // não há necessidade de ação adicional aqui pois o CollectionSelectionScreen 
-        // já vai recarregar os puzzles automaticamente
-      },
-    );
+    return buildDemoCollectionSelectionScreen(context);
   }
 }

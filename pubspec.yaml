@@ -28,6 +28,7 @@ dependencies:
   flutter_svg: ^2.2.0
   provider: ^6.1.5
   crypto: ^3.0.3
+  url_launcher: ^6.3.2
 
 dev_dependencies:
   flutter_test:
@@ -81,6 +82,16 @@ flutter:
     - assets/images/col_1/puzzle10.png
     - assets/images/col_1/puzzle10/
     - assets/images/col_1/puzzle10/4x4/
+
+    - assets/images/drag1.png
+    - assets/images/drag2.png
+    - assets/images/drag3.png
+    - assets/images/drag4.png
+    - assets/images/drag5.png
+
+    - assets/images/lock1.png
+    - assets/images/lock2.png
+    - assets/images/lock3.png
    
 
   # To add custom fonts to your application

@@ -12,7 +12,7 @@ import 'package:mosaico/main.dart';
 void main() {
   testWidgets('App loads successfully', (WidgetTester tester) async {
     // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+    await tester.pumpWidget(const MyApp(showWelcome: true));
 
     // Verify that our app starts with the correct name
     expect(find.text('MOSAICO'), findsOneWidget);

@@ -10,7 +10,7 @@ import 'dart:io' show Platform;
 import 'style_guide.dart';
 import 'ranking_service.dart';
 import 'best_times_service.dart';
-import 'welcome_screen.dart';
+// import 'welcome_screen.dart';
 
 
 class AuthPage extends StatefulWidget {
@@ -552,7 +552,6 @@ class AuthPageState extends State<AuthPage> {
       debugPrint('Successfully signed in with Apple. User: ${userCredential.user?.email}');
 
       // Check if this is a new user
-      final isNewUser = userCredential.additionalUserInfo?.isNewUser ?? false;
       final user = userCredential.user;
       
       if (user == null) return;
@@ -798,17 +797,32 @@ class AuthPageState extends State<AuthPage> {
               child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const SizedBox(height: 40), // Distância de 50px do topo
-                Text(
-                  'MOSAICO',
-                  style: AppStyles.title(context).copyWith(
-                    fontSize: 32,
-                    color: Theme.of(context).brightness == Brightness.dark
-                        ? Colors.white
-                        : const Color.fromARGB(255, 3, 104, 197),
+                const SizedBox(height: 40), // Distância de 40px do topo
+                Center(
+                  child: Column(
+                    children: [
+                      SizedBox(
+                        width: 120,
+                        height: 120,
+                        child: Image.asset(
+                          'assets/images/icon.png',
+                          fit: BoxFit.contain,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'MOSAICO',
+                        style: AppStyles.title(context).copyWith(
+                          fontSize: 32,
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? Colors.white
+                              : const Color.fromARGB(255, 3, 104, 197),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 48), // Distância de 40px do elemento seguinte
+                const SizedBox(height: 40), // Distância de 48px do elemento seguinte
                 if (!_isLogin)
                   TextFormField(
                     controller: _usernameController,
