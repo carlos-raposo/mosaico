@@ -74,6 +74,7 @@ class _SettingsPageState extends State<SettingsPage> {
   Future<void> _saveUsername() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
+    final messenger = ScaffoldMessenger.of(context);
     final newUsername = _usernameController.text.trim();
     // Validação igual à auth_page.dart
     if (newUsername.isEmpty) {
@@ -99,7 +100,8 @@ class _SettingsPageState extends State<SettingsPage> {
       }
       await FirebaseFirestore.instance.collection('users').doc(user.uid).update({'username': newUsername});
       setState(() { _initialUsername = newUsername; });
-      ScaffoldMessenger.of(context).showSnackBar(
+      if (!mounted) return;
+      messenger.showSnackBar(
         SnackBar(content: Text(_currentLocale.languageCode == 'pt' ? 'Username atualizado!' : 'Username updated!'), backgroundColor: Colors.green),
       );
     } catch (e) {
@@ -365,6 +367,7 @@ class _SettingsPageState extends State<SettingsPage> {
               leading: Icon(isAuthenticated ? Icons.logout : Icons.login, color: iconColor, size: 30.0),
               title: Text(isAuthenticated ? _logoutLabel : _loginLabel, style: TextStyle(color: textColor)),
               onTap: () async {
+                final navigator = Navigator.of(context);
                 if (isAuthenticated) {
                   await FirebaseAuth.instance.signOut();
                   try {
@@ -385,11 +388,11 @@ class _SettingsPageState extends State<SettingsPage> {
                     }
                   }
                   if (mounted) {
-                    Navigator.of(context).pushNamedAndRemoveUntil('/auth', (route) => false);
+                    navigator.pushNamedAndRemoveUntil('/auth', (route) => false);
                   }
                 } else {
                   if (mounted) {
-                    Navigator.of(context).pushNamed('/auth');
+                    navigator.pushNamed('/auth');
                   }
                 }
                 widget.onLogout();
@@ -403,6 +406,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 style: TextStyle(color: textColor),
               ),
               onTap: () async {
+                final messenger = ScaffoldMessenger.of(context);
                 final url = Uri.parse('https://carlos-raposo.github.io/mosaico/web/privacy-policy.html');
                 if (await canLaunchUrl(url)) {
                   await launchUrl(
@@ -410,7 +414,8 @@ class _SettingsPageState extends State<SettingsPage> {
                     mode: LaunchMode.externalApplication,
                   );
                 } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  if (!mounted) return;
+                  messenger.showSnackBar(
                     SnackBar(
                       content: Text(
                         _currentLocale.languageCode == 'pt'
@@ -434,6 +439,7 @@ class _SettingsPageState extends State<SettingsPage> {
               subtitle: Text('Remove dados temporários salvos no dispositivo', 
                            style: TextStyle(color: textColor.withValues(alpha: 0.7))),
               onTap: () async {
+                final messenger = ScaffoldMessenger.of(context);
                 bool? confirmClear = await showDialog<bool>(
                   context: context,
                   builder: (BuildContext context) {
@@ -468,14 +474,13 @@ class _SettingsPageState extends State<SettingsPage> {
                 );
                 if (confirmClear == true) {
                   await _clearAllCache();
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Cache limpa com sucesso!'),
-                        backgroundColor: Colors.green,
-                      ),
-                    );
-                  }
+                  if (!mounted) return;
+                  messenger.showSnackBar(
+                    const SnackBar(
+                      content: Text('Cache limpa com sucesso!'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
                 }
               },
             ),
