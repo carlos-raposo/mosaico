@@ -58,16 +58,7 @@ class AuthPageState extends State<AuthPage> {
     }
   }
   
-  // Method to aggressively clear all Google Sign-In sessions
-  Future<void> _clearAllGoogleSessions() async {
-    // Try with the instance
-    try {
-      await GoogleSignIn.instance.signOut();
-      await GoogleSignIn.instance.disconnect();
-    } catch (e) {
-      // Ignore errors: session may not exist or already signed out
-    }
-  }
+  
 
   // Check if a Google account already exists in our Firestore database
   Future<bool> _checkIfGoogleAccountExists(String email) async {
@@ -214,10 +205,23 @@ class AuthPageState extends State<AuthPage> {
   }
 
   Future<void> _login() async {
+    // Validate form before attempting login to avoid cryptic errors
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+
+    if (!_formKey.currentState!.validate()) {
+      _showErrorDialog(
+        _isPortuguese()
+            ? 'Por favor preencha os campos obrigatórios.'
+            : 'Please fill in the required fields.',
+      );
+      return;
+    }
+
     try {
       await FirebaseAuth.instance.signInWithEmailAndPassword(
-        email: _emailController.text,
-        password: _passwordController.text,
+        email: email,
+        password: password,
       );
 
       // Migra dados offline para usuário autenticado
@@ -229,9 +233,63 @@ class AuthPageState extends State<AuthPage> {
       // await progressService.migrateExistingUser();
 
       await _navigateAfterAuth();
+    } on FirebaseAuthException catch (e) {
+      debugPrint('FirebaseAuthException: ${e.code} - ${e.message}');
+      String message;
+      if (_isPortuguese()) {
+        switch (e.code) {
+          case 'invalid-email':
+            message = 'Email inválido. Verifique o endereço digitado.';
+            break;
+          case 'user-not-found':
+            message = 'Usuário não encontrado. Verifique o email ou crie uma conta.';
+            break;
+          case 'wrong-password':
+            message = 'Senha incorreta. Tente novamente.';
+            break;
+          case 'user-disabled':
+            message = 'Conta desativada. Contacte o suporte.';
+            break;
+          case 'network-request-failed':
+            message = 'Falha de rede. Verifique sua conexão com a internet.';
+            break;
+          case 'channel-error':
+            message = 'Erro de comunicação. Tente novamente mais tarde.';
+            break;
+          default:
+            message = 'Não foi possível iniciar sessão. Verifique os dados e tente novamente.';
+        }
+      } else {
+        switch (e.code) {
+          case 'invalid-email':
+            message = 'Invalid email. Please check the address.';
+            break;
+          case 'user-not-found':
+            message = 'User not found. Check the email or create an account.';
+            break;
+          case 'wrong-password':
+            message = 'Incorrect password. Please try again.';
+            break;
+          case 'user-disabled':
+            message = 'Account disabled. Please contact support.';
+            break;
+          case 'network-request-failed':
+            message = 'Network error. Please check your internet connection.';
+            break;
+          case 'channel-error':
+            message = 'Communication error. Please try again later.';
+            break;
+          default:
+            message = 'Could not log in. Please check your details and try again.';
+        }
+      }
+      _showErrorDialog(message);
     } catch (e) {
       debugPrint('Error: $e');
-      _showErrorDialog(e.toString());
+      final message = _isPortuguese()
+          ? 'Não foi possível iniciar sessão. Tente novamente mais tarde.'
+          : 'Unable to log in. Please try again later.';
+      _showErrorDialog(message);
     }
   }
 
@@ -288,6 +346,8 @@ class AuthPageState extends State<AuthPage> {
   Future<void> _resetPassword() async {
     final TextEditingController emailController = TextEditingController();
     
+    // Avoid holding onto BuildContext across async gaps; use mounted checks
+    if (!mounted) return;
     return showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -322,21 +382,52 @@ class AuthPageState extends State<AuthPage> {
             ElevatedButton(
               onPressed: () async {
                 final email = emailController.text.trim();
+                final navigator = Navigator.of(context); // capture NavigatorState before awaits
                 if (email.isEmpty) {
-                  _showErrorDialog(_isPortuguese() 
-                      ? 'Por favor, digite um email.' 
-                      : 'Please enter an email.');
+                  if (!mounted) return;
+                  await showDialog(
+                    context: navigator.context,
+                    builder: (ctx) => AlertDialog(
+                      title: Text(_isPortuguese() ? 'Aviso' : 'Warning'),
+                      content: Text(
+                        _isPortuguese()
+                          ? 'Por favor, digite um email.'
+                          : 'Please enter an email.'
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.of(ctx).pop(),
+                          child: const Text('OK'),
+                        ),
+                      ],
+                    ),
+                  );
                   return;
                 }
                 
                 try {
                   await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
-                  Navigator.of(context).pop();
-                  _showErrorDialog(_isPortuguese()
-                      ? 'Email de recuperação enviado! Verifique sua caixa de entrada.'
-                      : 'Password reset email sent! Check your inbox.');
+                  navigator.pop();
+                  if (!mounted) return;
+                  await showDialog(
+                    context: navigator.context,
+                    builder: (ctx) => AlertDialog(
+                      title: Text(_isPortuguese() ? 'Aviso' : 'Info'),
+                      content: Text(
+                        _isPortuguese()
+                          ? 'Email de recuperação enviado! Verifique sua caixa de entrada.'
+                          : 'Password reset email sent! Check your inbox.'
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.of(ctx).pop(),
+                          child: const Text('OK'),
+                        ),
+                      ],
+                    ),
+                  );
                 } catch (e) {
-                  Navigator.of(context).pop();
+                  navigator.pop();
                   String errorMessage = _isPortuguese()
                       ? 'Erro ao enviar email. Verifique se o email está correto.'
                       : 'Error sending email. Please check if the email is correct.';
@@ -347,7 +438,20 @@ class AuthPageState extends State<AuthPage> {
                         : 'Email not found. Please check the address.';
                   }
                   
-                  _showErrorDialog(errorMessage);
+                  if (!mounted) return;
+                  await showDialog(
+                    context: navigator.context,
+                    builder: (ctx) => AlertDialog(
+                      title: Text(_isPortuguese() ? 'Aviso' : 'Error'),
+                      content: Text(errorMessage),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.of(ctx).pop(),
+                          child: const Text('OK'),
+                        ),
+                      ],
+                    ),
+                  );
                 }
               },
               child: Text(_isPortuguese() ? 'Enviar' : 'Send'),
@@ -402,6 +506,7 @@ class AuthPageState extends State<AuthPage> {
         } else {
           // Account doesn't exist - show error message and offer to create account
           await googleSignIn.signOut();
+          if (!mounted) return;
           _showAccountNotFoundDialog(gUser.email);
           return;
         }
@@ -410,6 +515,7 @@ class AuthPageState extends State<AuthPage> {
         if (accountExists) {
           // Account already exists - show error message
           await googleSignIn.signOut();
+          if (!mounted) return;
           _showAccountAlreadyExistsDialog(gUser.email);
           return;
         } else {
@@ -458,6 +564,7 @@ class AuthPageState extends State<AuthPage> {
             : 'Google Sign-In configuration error. Details: ${e.toString()}';
       }
       
+      if (!mounted) return;
       _showErrorDialog(errorMessage);
     }
   }
@@ -826,7 +933,9 @@ class AuthPageState extends State<AuthPage> {
                 if (!_isLogin)
                   TextFormField(
                     controller: _usernameController,
-                    decoration: const InputDecoration(labelText: 'Username'),
+                    decoration: InputDecoration(
+                      labelText: _isPortuguese() ? 'Nome de Usuário' : 'Username',
+                    ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return _isPortuguese() ? 'Nome de usuário é obrigatório' : 'Username is required';
@@ -851,7 +960,7 @@ class AuthPageState extends State<AuthPage> {
                 TextFormField(
                   controller: _passwordController,
                   decoration: InputDecoration(
-                    labelText: 'Password',
+                    labelText: _isPortuguese() ? 'Senha' : 'Password',
                     suffixIcon: IconButton(
                       icon: Icon(_obscurePassword ? Icons.visibility : Icons.visibility_off),
                       onPressed: () {
@@ -875,7 +984,7 @@ class AuthPageState extends State<AuthPage> {
                   TextFormField(
                     controller: _confirmPasswordController,
                     decoration: InputDecoration(
-                      labelText: 'Confirm Password',
+                      labelText: _isPortuguese() ? 'Confirmar Senha' : 'Confirm Password',
                       suffixIcon: IconButton(
                         icon: Icon(_obscurePassword ? Icons.visibility : Icons.visibility_off),
                         onPressed: () {
@@ -904,7 +1013,9 @@ class AuthPageState extends State<AuthPage> {
                         : AppColors.buttonBgWhite,
                   ),
                   child: Text(
-                    _isLogin ? 'Login' : 'Create Account',
+                    _isPortuguese()
+                        ? (_isLogin ? 'Entrar' : 'Criar conta')
+                        : (_isLogin ? 'Login' : 'Create Account'),
                     style: AppStyles.buttonText(context, fontSize: 16),
                   ),
                 ),
@@ -924,7 +1035,9 @@ class AuthPageState extends State<AuthPage> {
                 TextButton(
                   onPressed: _toggleFormType,
                   child: Text(
-                    _isLogin ? 'Create an account' : 'Have an account? Login',
+                    _isPortuguese()
+                        ? (_isLogin ? 'Criar conta' : 'Já tem conta? Entrar')
+                        : (_isLogin ? 'Create an account' : 'Have an account? Login'),
                     style: AppStyles.subtitle(context),
                   ),
                 ),

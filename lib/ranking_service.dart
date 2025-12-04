@@ -127,6 +127,11 @@ class RankingService {
   }
 
   Future<void> updateUserBestTime(String puzzleId, int time) async {
+    // Guard: ignore impossible times
+    if (time <= 0) {
+      debugPrint('Ignoring impossible best time (<= 0) for $puzzleId');
+      return;
+    }
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
     final userRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
@@ -168,6 +173,11 @@ class RankingService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   Future<bool> updateRanking(String puzzleId, String puzzleName, int time) async {
+  // Guard: prevent recording impossible times
+    if (time <= 0) {
+      debugPrint('Rejected impossible ranking time (<= 0) for $puzzleId');
+      return false;
+    }
   // ...existing code...
   // Função utilitária para exibir ranking sem nulls
     // puzzleId e puzzleName devem ser únicos para cada puzzle

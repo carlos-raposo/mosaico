@@ -12,13 +12,9 @@ class RankingScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     String formatTime(int seconds) {
-      if (seconds < 60) return '$seconds seg';
       final min = seconds ~/ 60;
       final seg = seconds % 60;
-      if (seg == 0) {
-        return '$min min';
-      }
-      return '$min min $seg seg';
+      return '$min:${seg.toString().padLeft(2, '0')}';
     }
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final isPortuguese = Localizations.localeOf(context).languageCode == 'pt';

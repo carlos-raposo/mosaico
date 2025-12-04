@@ -39,7 +39,7 @@ class WelcomeScreen extends StatefulWidget {
   static Future<void> resetSessionFlag() async {
     final prefs = await SharedPreferences.getInstance();
     final currentUserId = await _getCurrentUserId();
-    final userKey = 'show_welcome_screen_' + currentUserId;
+    final userKey = 'show_welcome_screen_$currentUserId';
     await prefs.remove(userKey);
   }
 
@@ -120,7 +120,6 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
       builder: (context, constraints) {
         final totalHeight = constraints.maxHeight;
         final imageAreaHeight = totalHeight * 0.45;
-        final textAreaHeight = totalHeight * 0.55;
         return SingleChildScrollView(
           child: SizedBox(
             height: totalHeight,
@@ -1088,7 +1087,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
                                   child: Text(
                                     _isPortuguese() ? 'Pular' : 'Skip',
                                     style: TextStyle(
-                                      color: textColor.withOpacity(0.7),
+                                      color: textColor.withValues(alpha: 0.7),
                                       fontSize: 16,
                                     ),
                                     overflow: TextOverflow.ellipsis,
@@ -1166,6 +1165,8 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
 }
 
 class DragAnimationWidget extends StatefulWidget {
+  const DragAnimationWidget({super.key});
+
   @override
   DragAnimationWidgetState createState() => DragAnimationWidgetState();
 }
@@ -1220,6 +1221,8 @@ class DragAnimationWidgetState extends State<DragAnimationWidget> with TickerPro
 }
 
 class LockAnimationWidget extends StatefulWidget {
+  const LockAnimationWidget({super.key});
+
   @override
   LockAnimationWidgetState createState() => LockAnimationWidgetState();
 }

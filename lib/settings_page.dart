@@ -403,7 +403,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 style: TextStyle(color: textColor),
               ),
               onTap: () async {
-                final url = Uri.parse('https://carlosraposo.eu/');
+                final url = Uri.parse('https://carlos-raposo.github.io/mosaico/web/privacy-policy.html');
                 if (await canLaunchUrl(url)) {
                   await launchUrl(
                     url,
@@ -432,7 +432,7 @@ class _SettingsPageState extends State<SettingsPage> {
               leading: Icon(Icons.clear_all, color: iconColor, size: 30.0),
               title: Text('Limpar Cache Local', style: TextStyle(color: textColor)),
               subtitle: Text('Remove dados temporários salvos no dispositivo', 
-                           style: TextStyle(color: textColor.withOpacity(0.7))),
+                           style: TextStyle(color: textColor.withValues(alpha: 0.7))),
               onTap: () async {
                 bool? confirmClear = await showDialog<bool>(
                   context: context,

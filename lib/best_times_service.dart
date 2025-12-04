@@ -60,6 +60,11 @@ class BestTimesService {
   
   /// Salva novo bestTime (cache + Firestore se online)
   Future<bool> saveBestTime(String puzzleId, int timeSeconds) async {
+    // Guard: ignore impossible times
+    if (timeSeconds <= 0) {
+      debugPrint('Ignoring impossible time (<= 0) for $puzzleId');
+      return false;
+    }
     final userKey = _getUserKey();
     final user = FirebaseAuth.instance.currentUser;
     

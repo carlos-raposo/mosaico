@@ -8,6 +8,7 @@ import 'ranking_screen.dart';
 import 'settings_controller.dart';
 import 'package:provider/provider.dart';
 import 'demo_collections.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 class HomeScreen extends StatelessWidget {
   final String userName;
@@ -277,6 +278,70 @@ class HomeScreen extends StatelessWidget {
                           ),
                         );
                       }
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton.icon(   /// Exit Button
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: isDarkMode ? AppColors.buttonBgBlue : AppColors.buttonBgWhite,
+                      foregroundColor: isDarkMode ? Colors.black : Colors.black,
+                      minimumSize: const Size(double.infinity, 52),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      side: BorderSide(
+                        color: isDarkMode ? AppColors.buttonBorderDark : AppColors.buttonBorderLight,
+                        width: 2,
+                      ),
+                    ),
+                    icon: Icon(
+                      Icons.exit_to_app,
+                      size: 24,
+                      color: isDarkMode ? AppColors.darkText : AppColors.lightText,
+                    ),
+                    label: Text(
+                      Localizations.localeOf(context).languageCode == 'pt' ? 'Sair' : 'Exit',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: isDarkMode ? AppColors.darkText : AppColors.lightText,
+                        fontWeight: FontWeight.w500,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    onPressed: () async {
+                      final navigator = Navigator.of(context);
+                      final isPortuguese = Localizations.localeOf(context).languageCode == 'pt';
+                      final confirmed = await showDialog<bool>(
+                        context: context,
+                        builder: (dialogContext) {
+                          return AlertDialog(
+                            title: Text(isPortuguese ? 'Sair da conta' : 'Logout'),
+                            content: Text(isPortuguese ? 'Tem certeza que deseja terminar a sessão?' : 'Are you sure you want to log out?'),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.of(dialogContext).pop(false),
+                                child: Text(isPortuguese ? 'Cancelar' : 'Cancel'),
+                              ),
+                              TextButton(
+                                onPressed: () => Navigator.of(dialogContext).pop(true),
+                                child: Text(isPortuguese ? 'Sair' : 'Logout'),
+                              ),
+                            ],
+                          );
+                        },
+                      ) ?? false;
+                      if (!confirmed) return;
+                      try {
+                        await FirebaseAuth.instance.signOut();
+                        try {
+                          await GoogleSignIn.instance.signOut();
+                          await GoogleSignIn.instance.disconnect();
+                        } catch (_) {
+                          // Fallback attempts, no-op on failure
+                          try { await GoogleSignIn.instance.signOut(); } catch (_) {}
+                        }
+                      } catch (e) {
+                        // Optionally show a snackbar, but continue navigation
+                      }
+                      navigator.pushNamedAndRemoveUntil('/auth', (route) => false);
                     },
                   ),
                   
