@@ -1,6 +1,6 @@
 # 🗺️ ROADMAP - Mosaico App - Desenvolvimentos Futuros
 
-## 📊 Status Atual: v1.0.1
+## 📊 Status Atual: v1.0.2
 - ✅ Jogo funcional com 10 puzzles
 - ✅ Sistema de autenticação Firebase
 - ✅ Rankings globais e melhores tempos pessoais
@@ -203,8 +203,8 @@
 
 ---
 
-*Roadmap atualizado em: 22 de Outubro de 2025*  
-*Versão atual: v1.0.1*  
+*Roadmap atualizado em: 15 de Dezembro de 2025*  
+*Versão atual: v1.0.2*  
 *Próxima release: v1.1.0 - Sistema de Progressão*
 
 **🎮 Vamos tornar o Mosaico no melhor jogo de puzzles! 🧩**

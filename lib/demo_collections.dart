@@ -44,7 +44,7 @@ final List<CollectionData> demoCollections = [
         name: 'Puzzle 6',
         imagePath: 'assets/images/col_1/puzzle6.png',
         pieceFolder: 'assets/images/col_1/puzzle6/4x4/',
-        pieceCount: 25,
+        pieceCount: 16,
       ),
       PuzzleData(
         name: 'Puzzle 7',
@@ -61,14 +61,14 @@ final List<CollectionData> demoCollections = [
       PuzzleData(
         name: 'Puzzle 9',
         imagePath: 'assets/images/col_1/puzzle9.png',
-        pieceFolder: 'assets/images/col_1/puzzle9/4x4/',
-        pieceCount: 16,
+        pieceFolder: 'assets/images/col_1/puzzle9/5x5/',
+        pieceCount: 25,
       ),
       PuzzleData(
         name: 'Puzzle 10',
         imagePath: 'assets/images/col_1/puzzle10.png',
         pieceFolder: 'assets/images/col_1/puzzle10/4x4/',
-        pieceCount: 40,
+        pieceCount: 16,
       ),
     ],
   ),

@@ -298,7 +298,15 @@ class HomeScreen extends StatelessWidget {
                       color: isDarkMode ? AppColors.darkText : AppColors.lightText,
                     ),
                     label: Text(
-                      Localizations.localeOf(context).languageCode == 'pt' ? 'Sair' : 'Exit',
+                      (() {
+                        final isPt = Localizations.localeOf(context).languageCode == 'pt';
+                        final isAuthenticated = FirebaseAuth.instance.currentUser != null;
+                        if (isAuthenticated) {
+                          return isPt ? 'Sair' : 'Logout';
+                        } else {
+                          return isPt ? 'Entrar' : 'Login';
+                        }
+                      })(),
                       style: TextStyle(
                         fontSize: 16,
                         color: isDarkMode ? AppColors.darkText : AppColors.lightText,
@@ -308,6 +316,11 @@ class HomeScreen extends StatelessWidget {
                     ),
                     onPressed: () async {
                       final navigator = Navigator.of(context);
+                      final isAuthenticated = FirebaseAuth.instance.currentUser != null;
+                      if (!isAuthenticated) {
+                        navigator.pushNamed('/auth');
+                        return;
+                      }
                       final isPortuguese = Localizations.localeOf(context).languageCode == 'pt';
                       final confirmed = await showDialog<bool>(
                         context: context,
@@ -335,11 +348,10 @@ class HomeScreen extends StatelessWidget {
                           await GoogleSignIn.instance.signOut();
                           await GoogleSignIn.instance.disconnect();
                         } catch (_) {
-                          // Fallback attempts, no-op on failure
                           try { await GoogleSignIn.instance.signOut(); } catch (_) {}
                         }
                       } catch (e) {
-                        // Optionally show a snackbar, but continue navigation
+                        // Ignoring logout errors intentionally; navigation proceeds to auth.
                       }
                       navigator.pushNamedAndRemoveUntil('/auth', (route) => false);
                     },
@@ -354,7 +366,7 @@ class HomeScreen extends StatelessWidget {
               child: Padding(
                 padding: const EdgeInsets.only(top: 16.0, bottom: 8.0),
                 child: Text(
-                  'Versão 1.0.1',
+                  'Versão 1.0.2',
                   style: TextStyle(
                     color: isDarkMode ? Colors.grey[500] : const Color.fromARGB(255, 3, 104, 197),
                     fontSize: 12,
